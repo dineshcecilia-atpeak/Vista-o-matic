@@ -13,6 +13,23 @@ export const navItems = [
   { name: "Contact", link: "#contact" },
 ];
 
+// data/index.ts
+export const socialMedia = [
+  {
+    platform: "Facebook",
+    url: "https://facebook.com",
+    icon: "facebook-icon"
+  },
+  {
+    platform: "Twitter",
+    url: "https://twitter.com",
+    icon: "twitter-icon"
+  },
+  // Add more social media entries here
+];
+
+// Alternatively, if you're using a default export:
+export default { socialMedia };
 
 
 export const gridItems = [

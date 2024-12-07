@@ -11,6 +11,7 @@ const Footer = () => {
         <Spotlight className="left-full h-[80vh]" fill="violet" />
         <Spotlight className="left-80 h-[80vh] w-[50vw]" fill="#87CEEB" />
       </div>
+      
       {/* background grid */}
       <div className="w-full absolute left-0 -bottom-72 min-h-96">
         <img
@@ -45,15 +46,15 @@ const Footer = () => {
 
         <div className="flex items-center md:gap-3 gap-6">
           {socialMedia && socialMedia.length > 0 ? (
-            socialMedia.map((info) => (
+            socialMedia.map((info, index) => (
               <a
-                key={info.id}
+                key={info.id || index}  // Use `info.id` or fallback to `index` for key
                 href={info.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 cursor-pointer flex justify-center items-center backdrop-filter backdrop-blur-lg saturate-180 bg-opacity-75 bg-black-200 rounded-lg border border-black-300 hover:scale-105 transition-transform duration-300 ease-in-out"
               >
-                <img src={info.icon} alt="social media icon" className="w-6 h-6" />
+                <img src={info.icon} alt={`${info.name} icon`} className="w-6 h-6" />
               </a>
             ))
           ) : (
