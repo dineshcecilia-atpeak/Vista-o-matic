@@ -1,5 +1,4 @@
-'use client'; // This marks the component as a Client Component
-
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Container } from 'react-bootstrap';
 import { Bar, Pie } from 'react-chartjs-2';
@@ -14,107 +13,77 @@ import {
     ArcElement,
 } from 'chart.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Link from "next/link";
 import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
-import { IconArrowWaveRightUp, IconClipboardCopy, IconSignature, IconBoxAlignTopLeft } from '@tabler/icons-react'; // Assuming these icons are being used
 
-// Register Chart.js components
+// Register the necessary components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-type PeopleData = {
-    lastCount: number;
-    timestamp: string;
-};
-
-type PaymentData = {
-    cart: { name: string; quantity: number }[];
-    price?: number;
-};
-
-type GenderData = {
-    Date: string;
-    "Total male": number;
-    "Total Female": number;
-};
-
-type AssociationRule = {
-    rule: string;
-    support: number;
-    confidence: number;
-    lift: number;
-};
-
-const Dashboard: React.FC = () => {
-    // Color Palette
-    const colors = {
-        navy: "#1C2E4A",
-        burgundy: "#7E1F28",
-        green: "#236C4B",
-        orange: "#D97C29",
-        cream: "#E4CFA1",
-    };
-
-    const [peopleData, setPeopleData] = useState<PeopleData[]>([]);
-    const [attendanceData, setAttendanceData] = useState<Record<string, number>>({});
-    const [genderData, setGenderData] = useState<{ date: string; totalMale: number; totalFemale: number }[]>([]);
-    const [unitSales, setUnitSales] = useState<number>(0);
-    const [revenue, setRevenue] = useState<number>(0);
-    const [topProduct, setTopProduct] = useState<string>('');
-    const [marketBasketData, setMarketBasketData] = useState<{ associationRules: AssociationRule[] }>({ associationRules: [] });
-    const [timeDistributionData, setTimeDistributionData] = useState<Record<string, number>>({
-        morning: 0,
-        afternoon: 0,
-        evening: 0,
-        night: 0,
+const Dashboard = () => {
+    const [peopleData, setPeopleData] = useState([]);
+    const [attendanceData, setAttendanceData] = useState({});
+    const [genderData, setGenderData] = useState([]);
+    const [unitSales, setUnitSales] = useState(0);
+    const [revenue, setRevenue] = useState(0);
+    const [topProduct, setTopProduct] = useState('');
+    const [marketBasketData, setMarketBasketData] = useState({
+        associationRules: [],
     });
+    const [timeDistributionData, setTimeDistributionData] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch people data
-                const response = await supabase.from<PeopleData>("peopledata").select("lastCount, timestamp");
-                const pay = await supabase.from<PaymentData>("payments").select();
+                const response = await supabase.from("peopledata").select("lastCount, timestamp");
+                const pay = await supabase.from("payments").select();
 
                 // Payment analysis
-                const cache: Record<string, number> = {};
-                pay.data?.forEach((x) => {
-                    x.cart.forEach((y) => {
-                        cache[y.name] = (cache[y.name] || 0) + y.quantity;
-                    });
+                let cache = new Proxy({}, {
+                    get: (target, name) => (name in target ? target[name] : 0)
                 });
 
-                setPeopleData(response.data || []);
+                pay.data.forEach((x) => {
+                    // Parse cart if it's a JSON string
+                    const parsedCart = typeof x.cart === 'string' ? JSON.parse(x.cart) : x.cart;
+                
+                    // Ensure it's an array before processing
+                    if (Array.isArray(parsedCart)) {
+                        parsedCart.forEach((y) => {
+                            cache[y.name] = (cache[y.name] || 0) + y.quantity;
+                        });
+                    } else {
+                        console.error('Unexpected cart structure:', parsedCart);
+                    }
+                });
+                
+                setPeopleData(response.data);
                 setAttendanceData(cache);
 
                 // Calculate unit sales
-                const totalSales = pay.data?.reduce(
-                    (total, x) => total + x.cart.reduce((sum, y) => sum + y.quantity, 0),
-                    0
-                ) || 0;
+                const totalSales = pay.data.reduce((total, x) => total + x.cart.reduce((sum, y) => sum + y.quantity, 0), 0);
                 setUnitSales(totalSales);
 
                 // Calculate revenue
-                const totalRevenueThisMonth = pay.data?.reduce((total, x) => total + (x.price || 0), 0) || 0;
+                const totalRevenueThisMonth = pay.data.reduce((total, x) => total + (x.price || 0), 0);
                 setRevenue(totalRevenueThisMonth);
 
                 // Determine the top product
-                const productCounts: Record<string, number> = {};
-                pay.data?.forEach((x) => {
+                const productCounts = {};
+                pay.data.forEach((x) => {
                     x.cart.forEach((y) => {
                         productCounts[y.name] = (productCounts[y.name] || 0) + y.quantity;
                     });
                 });
-                const topProductEntry = Object.entries(productCounts).reduce(
-                    (max, entry) => (entry[1] > max[1] ? entry : max),
-                    ['', 0]
-                );
+                const topProductEntry = Object.entries(productCounts).reduce((max, entry) => (entry[1] > max[1] ? entry : max), ['', 0]);
                 setTopProduct(topProductEntry[0]);
 
                 // Fetch gender data
-                const genderResponse = await supabase.from<GenderData>("analysis").select("Date, \"Total male\", \"Total Female\"");
-                const aggregatedGenderData: Record<string, { totalMale: number; totalFemale: number }> = {};
+                const genderResponse = await supabase.from("analysis").select("Date, \"Total male\", \"Total Female\"");
+                const aggregatedGenderData = {};
 
                 // Aggregate data by date
-                genderResponse.data?.forEach((item) => {
+                genderResponse.data.forEach((item) => {
                     const date = item.Date;
                     if (!aggregatedGenderData[date]) {
                         aggregatedGenderData[date] = { totalMale: 0, totalFemale: 0 };
@@ -133,11 +102,11 @@ const Dashboard: React.FC = () => {
                 setGenderData(aggregatedDataArray);
 
                 // Market Basket Analysis
-                const associationRules = calculateAssociationRules(pay.data || [], 0.1, 0.5); // Minimum support: 0.1, Minimum confidence: 50%
+                const associationRules = calculateAssociationRules(pay.data, 0.1, 0.5); // Minimum support: 0.1, Minimum confidence: 50%
                 setMarketBasketData({ associationRules });
 
                 // Calculate time distribution
-                calculateTimeDistribution(response.data || []);
+                calculateTimeDistribution(response.data);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -147,39 +116,57 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, []);
 
-    const aggregatePeopleCountByDate = (data: PeopleData[]) => {
-        const aggregatedData: Record<string, number> = {};
-
-        data.forEach((entry) => {
+    const aggregatePeopleCountByDate = (data) => {
+        const aggregatedData = {};
+    
+        data.forEach(entry => {
             const date = new Date(entry.timestamp).toLocaleDateString(); // Format the date
-            aggregatedData[date] = (aggregatedData[date] || 0) + entry.lastCount;
+            if (aggregatedData[date]) {
+                aggregatedData[date] += entry.lastCount; // Sum the counts for the same date
+            } else {
+                aggregatedData[date] = entry.lastCount; // Initialize count for the date
+            }
         });
-
+    
+        // Convert the aggregated object into arrays for labels and data
         return {
             labels: Object.keys(aggregatedData),
             data: Object.values(aggregatedData),
         };
     };
+    
+    const calculateFrequentItemSets = (transactions, minSupport) => {
+        const itemCounts = {};
+        transactions.forEach((transaction) => {
+            const itemsInCart = transaction.cart.map(item => item.name);
+            const uniqueItems = new Set(itemsInCart);
+            uniqueItems.forEach(item => {
+                itemCounts[item] = (itemCounts[item] || 0) + 1;
+            });
+        });
 
-    const calculateAssociationRules = (
-        transactions: PaymentData[],
-        minSupport: number,
-        minConfidence: number
-    ): AssociationRule[] => {
-        const itemCounts: Record<string, number> = {};
-        const itemPairCounts: Record<string, number> = {};
+        return Object.entries(itemCounts)
+            .filter(([item, count]) => count >= minSupport)
+            .map(([item]) => item);
+    };
+
+    const calculateAssociationRules = (transactions, minSupport, minConfidence) => {
+        const itemCounts = {};
+        const itemPairCounts = {};
         const totalTransactions = transactions.length;
 
-        transactions.forEach((transaction) => {
-            const itemsInCart = transaction.cart.map((item) => item.name);
+        // Count individual item occurrences
+        transactions.forEach(transaction => {
+            const itemsInCart = transaction.cart.map(item => item.name);
             const uniqueItems = new Set(itemsInCart);
 
-            uniqueItems.forEach((item) => {
+            uniqueItems.forEach(item => {
                 itemCounts[item] = (itemCounts[item] || 0) + 1;
             });
 
-            uniqueItems.forEach((itemA) => {
-                uniqueItems.forEach((itemB) => {
+            // Count pairs of items
+            uniqueItems.forEach(itemA => {
+                uniqueItems.forEach(itemB => {
                     if (itemA !== itemB) {
                         const pairKey = [itemA, itemB].sort().join(',');
                         itemPairCounts[pairKey] = (itemPairCounts[pairKey] || 0) + 1;
@@ -188,25 +175,31 @@ const Dashboard: React.FC = () => {
             });
         });
 
-        const rules: AssociationRule[] = [];
-        Object.entries(itemPairCounts).forEach(([pair, count]) => {
+        // Generate rules
+        const rules = [];
+        for (const [pair, count] of Object.entries(itemPairCounts)) {
             const [itemA, itemB] = pair.split(',');
             const support = count / totalTransactions;
-            const confidence = count / itemCounts[itemA];
-            const lift = confidence / (itemCounts[itemB] / totalTransactions);
+            const confidence = count / itemCounts[itemA]; // Confidence based on itemA
+            const lift = confidence / (itemCounts[itemB] / totalTransactions); // Correct lift formula
 
-            if (support >= minSupport && confidence >= minConfidence) {
-                rules.push({ rule: `${itemA} => ${itemB}`, support, confidence, lift });
+            // Check if support and confidence meet the thresholds
+            if (support >= minSupport && confidence <= 1) {
+                rules.push({
+                    rule: `${itemA} => ${itemB}`,
+                    support: support,
+                    confidence: confidence,
+                    lift: lift,
+                });
             }
-        });
-
+        }
         return rules;
     };
 
-    const calculateTimeDistribution = (data: PeopleData[]) => {
-        const timeDistribution: Record<string, number> = { morning: 0, afternoon: 0, evening: 0, night: 0 };
-
-        data.forEach((entry) => {
+    const calculateTimeDistribution = (data) => {
+        const timeDistribution = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+    
+        data.forEach(entry => {
             const hour = new Date(entry.timestamp).getHours();
             if (hour >= 5 && hour < 12) {
                 timeDistribution.morning += entry.lastCount;
@@ -218,77 +211,159 @@ const Dashboard: React.FC = () => {
                 timeDistribution.night += entry.lastCount;
             }
         });
-
+    
         setTimeDistributionData(timeDistribution);
     };
 
     const { labels, data } = aggregatePeopleCountByDate(peopleData);
+
     const peopleCountChartData = {
-        labels,
+        labels: labels, // Dates
         datasets: [
             {
                 label: 'People Count',
-                data,
-                backgroundColor: colors.orange,
-                borderColor: colors.orange,
+                data: data, // Aggregated counts
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const attendanceChartData = {
+        labels: Object.keys(attendanceData),
+        datasets: [
+            {
+                label: 'Product Count',
+                data: Object.values(attendanceData),
+                backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const genderChartData = {
+        labels: genderData.map(data => data.date),
+        datasets: [
+            {
+                label: 'Total Male',
+                data: genderData.map(data => data.totalMale),
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Total Female',
+                data: genderData.map(data => data.totalFemale),
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const timeChartData = {
+        labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
+        datasets: [
+            {
+                label: 'People Count Distribution',
+                data: [
+                    timeDistributionData.morning,
+                    timeDistributionData.afternoon,
+                    timeDistributionData.evening,
+                    timeDistributionData.night,
+                ],
+                backgroundColor: ['rgba(255, 159, 64, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                borderColor: ['rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 99, 132, 1)'],
                 borderWidth: 1,
             },
         ],
     };
 
     return (
-        <Container
-            fluid
-            style={{
-                minHeight: '100vh',
-                backgroundColor: colors.navy,
-                padding: '20px',
-            }}
-        >
-            {/* BentoGrid Overview Cards */}
-            <div className="max-w-6xl mx-auto gap-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                {[
-                    {
-                        title: "Monthly Revenue",
-                        description: `$${revenue.toLocaleString()} (15% Growth)`,
-                        header: "Revenue",
-                        icon: <IconArrowWaveRightUp size={24} className="text-green-400" />,
-                    },
-                    {
-                        title: "Total Transactions",
-                        description: "1,892 (8% Growth)",
-                        header: "Transactions",
-                        icon: <IconClipboardCopy size={24} className="text-blue-400" />,
-                    },
-                    {
-                        title: "Employee Attendance",
-                        description: "95% (Today)",
-                        header: "Attendance",
-                        icon: <IconSignature size={24} className="text-yellow-400" />,
-                    },
-                    {
-                        title: "Customer Satisfaction",
-                        description: "4.8/5.0",
-                        header: "Satisfaction",
-                        icon: <IconBoxAlignTopLeft size={24} className="text-pink-400" />,
-                    },
-                ].map((item, idx) => (
-                    <div
-                        key={idx}
-                        className={`border p-6 rounded-lg shadow-md bg-white ${idx === 3 ? "md:col-span-2" : ""}`}
-                    >
-                        <div className="flex items-center">
-                            {item.icon}
-                            <div className="ml-4">
-                                <h4 className="text-xl font-semibold">{item.title}</h4>
-                                <p className="text-gray-500">{item.description}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+        <Container className="mt-5">
+            <Row>
+                <Col md={4}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Unit Sales</Card.Title>
+                            <Card.Text>{unitSales}</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Revenue</Card.Title>
+                            <Card.Text>{revenue.toFixed(2)} USD</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Top Product</Card.Title>
+                            <Card.Text>{topProduct}</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={6} className="mb-4">
+                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>People Count Over Time</Card.Title>
+                            <Bar data={peopleCountChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={6} className="mb-4">
+                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Product Data</Card.Title>
+                            <Bar data={attendanceChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={6} className="mb-4">
+                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Gender Distribution Over Time</Card.Title>
+                            <Bar data={genderChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={6} className="mb-4">
+                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Time Distribution of People Count</Card.Title>
+                            <Pie data={timeChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
 
-            {/* Other Dashboard Components */}
+            <Row>
+                <Col md={12}>
+                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Market Basket Analysis</Card.Title>
+                            <ul>
+                                {marketBasketData.associationRules.length > 0 ? 
+                                    marketBasketData.associationRules.map((rule, index) => (
+                                        <li key={index}>
+                                            <strong>{rule.rule}</strong> - Support: {rule.support.toFixed(2)}, Confidence: {rule.confidence.toFixed(2)}, Lift: {rule.lift.toFixed(2)}
+                                        </li>
+                                    )) 
+                                    : <p>No rules generated</p>}
+                            </ul>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
         </Container>
     );
 };

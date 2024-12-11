@@ -85,7 +85,7 @@ export const FloatingNav = ({
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">
-                            Attendance
+                            Sentiment
                           </h3>
                         </div>
                       </Link>
@@ -94,13 +94,14 @@ export const FloatingNav = ({
                       <Link href="/qr-scanner">
                         <div className="flex flex-col items-center group">
                           <img
-                            src="/qrscanner.png"
+                            src="/air.png"
                             alt="QR Scanner"
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">
-                            QR Scanner
+                          Air Monitor
                           </h3>
+
                         </div>
                       </Link>
                       {/* Heatmap */}
@@ -126,7 +127,7 @@ export const FloatingNav = ({
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">
-                            Feedback & Counting
+                            Counting
                           </h3>
                         </div>
                       </Link>

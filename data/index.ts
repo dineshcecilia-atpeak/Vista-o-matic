@@ -9,7 +9,7 @@ export const navItems = [
       { name: "QR Scanner", link: "#qr-scanner" },
     ],
   },
-  { name: "Dashboard", link: "#projects" },
+  { name: "Dashboard", link: "/dashboard" },
   { name: "Contact", link: "#contact" },
 ];
 

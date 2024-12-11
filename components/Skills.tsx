@@ -22,8 +22,8 @@ function Skills() {
   return (
     <div className="mt-0 py-0">
       <h1 className="heading">
-        Skills &amp;{" "}
-        <span className="text-purple">Technologies</span>
+      
+        <span className="text-purple">Technologies Used</span>
       </h1>
       <IconCloud iconSlugs={slugs} />
     </div>

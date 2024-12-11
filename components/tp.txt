@@ -1,0 +1,201 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+
+const Count: React.FC = () => {
+  const [selectedFeed, setSelectedFeed] = useState("Main Entrance");
+  const [isHeatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [isWebcamActive, setWebcamActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Function to start the webcam feed
+  const startWebcam = async () => {
+    if (navigator.mediaDevices && videoRef.current) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+
+        // Set the video source to the stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+
+        setWebcamActive(true); // Indicate the webcam is active
+      } catch (error) {
+        console.error("Error accessing webcam:", error);
+      }
+    }
+  };
+
+  // Cleanup the webcam stream when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        const tracks = stream.getTracks();
+        tracks.forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  return (
+    <section id="smart_space_analytics" className="p-6 lg:p-8 bg-[#00142a] min-h-screen">
+      {/* Title Section */}
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Smart Space Analytics</h2>
+        <p className="text-[#da7c29]">Comprehensive retail analytics and monitoring system</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Live Feed & Analytics Column */}
+        <div className="lg:col-span-2">
+          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Live Analytics</h3>
+              <div className="flex items-center space-x-2">
+                <span className="flex items-center text-[#da7c29]">
+                  <span className="w-2 h-2 bg-[#da7c29] rounded-full animate-pulse mr-2"></span>
+                  Live
+                </span>
+                <select
+                  className="bg-[#404040] text-white border-0 rounded-lg text-sm px-3 py-2"
+                  value={selectedFeed}
+                  onChange={(e) => setSelectedFeed(e.target.value)}
+                >
+                  <option>Main Entrance</option>
+                  <option>Shopping Area</option>
+                  <option>Checkout Zone</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Video Feed Placeholder */}
+            <div className="relative aspect-video bg-[#00142a] rounded-lg overflow-hidden">
+              {/* Heat Map Toggle */}
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  className="bg-[#404040] text-white rounded-lg px-3 py-2 text-sm flex items-center"
+                  onClick={() => setHeatmapEnabled(!isHeatmapEnabled)}
+                >
+                  <i className="fas fa-fire text-[#da7c29] mr-2"></i>
+                  {isHeatmapEnabled ? "Disable Heatmap" : "Enable Heatmap"}
+                </button>
+              </div>
+
+              {/* Start Webcam Button */}
+              {!isWebcamActive && (
+                <div className="absolute top-4 left-4 z-10">
+                  <button
+                    className="bg-[#da7c29] text-white rounded-lg px-4 py-2"
+                    onClick={startWebcam}
+                  >
+                    Start Webcam
+                  </button>
+                </div>
+              )}
+
+              {/* Video Feed */}
+              {isWebcamActive && (
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  autoPlay
+                  playsInline
+                  muted
+                />
+              )}
+
+              {/* Stats */}
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between space-x-4">
+                {[
+                  { icon: "fas fa-users", label: "Count", value: "24" },
+                  { icon: "fas fa-venus-mars", label: "Gender", value: "M: 55% | F: 45%" },
+                  { icon: "fas fa-smile", label: "Mood", value: "Positive" },
+                ].map((stat, index) => (
+                  <div key={index} className="bg-[#1e2633] rounded-lg p-2 text-sm flex items-center flex-1">
+                    <i className={`${stat.icon} text-[#da7c29] mr-2`}></i>
+                    <span className="text-white">
+                      {stat.label}: <span className="font-bold">{stat.value}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {[
+              { title: "Today's Sales", value: "$4,285", change: "↑ 12.5%", color: "text-green-500" },
+              { title: "Transactions", value: "186", change: "↑ 8.3%", color: "text-green-500" },
+              { title: "Avg. Time Spent", value: "24m", change: "↓ 3.1%", color: "text-red-500" },
+            ].map((stat, index) => (
+              <div key={index} className="bg-[#1e2633] rounded-lg border border-[#404040] p-4">
+                <h4 className="text-[#da7c29] text-sm mb-2">{stat.title}</h4>
+                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className={stat.color + " text-sm"}>{stat.change}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Side Panel */}
+        <div className="space-y-6">
+          {/* Real-time Metrics */}
+          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Real-time Metrics</h3>
+            {[
+              { label: "Store Capacity", value: "24/50", percent: 48 },
+              { label: "Employee Attendance", value: "12/15", percent: 80 },
+              { label: "QR Transactions", value: "45 today", percent: 65 },
+            ].map((metric, index) => (
+              <div key={index} className="mb-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-[#da7c29]">{metric.label}</span>
+                  <span className="text-white">{metric.value}</span>
+                </div>
+                <div className="w-full bg-[#404040] rounded-full h-2">
+                  <div
+                    className="bg-[#da7c29] rounded-full h-2"
+                    style={{ width: `${metric.percent}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Analytics Assistant */}
+          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Analytics Assistant</h3>
+            <div className="bg-[#00142a] rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <div className="w-8 h-8 rounded-full bg-[#da7c29] flex items-center justify-center">
+                  <i className="fas fa-robot text-white"></i>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-[#da7c29]">
+                    How can I help you analyze your store data today?
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <input
+                type="text"
+                placeholder="Ask about sales, attendance, or trends..."
+                className="flex-1 bg-[#404040] border border-[#404040] rounded-lg px-4 py-2 text-sm text-white"
+              />
+              <button className="bg-[#da7c29] text-white rounded-lg px-4 py-2">
+                <i className="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Count;

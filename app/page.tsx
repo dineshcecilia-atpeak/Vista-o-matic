@@ -4,11 +4,14 @@ import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
 import RecentProjects from "@/components/RecentProjects";
 import Skills from "@/components/Skills";
-import Dash from "@/components/Dash";
-//import Dashboard from "@/components/Dashboard";
+import Dashboard from "@/components/Dashboard";
+import StoreHeatmap from "@/components/StoreHeatmap";
+import Peoplecount from "@/components/Peoplecount";
+import Chatbot from "@/components/Chatbot";
 
 import { FloatingNav } from "@/components/ui/FloatingNav";
 import { navItems } from "@/data";
+import Feedback from "@/components/Feedback";
 
 export default function Home() {
   return (
@@ -20,10 +23,12 @@ export default function Home() {
         navItems={navItems} />
         <Hero />
         <Skills />
-        <Dash />
-        
-
-        {/* <RecentProject /> */}
+           <Peoplecount />
+           <Feedback />
+           <StoreHeatmap />
+          <Dashboard />
+         <RecentProjects /> 
+         <Chatbot />
         <Footer />
       </div>
     </main>

@@ -1,0 +1,220 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Card, Col, Row, Container } from 'react-bootstrap';
+import { Bar, Pie } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+} from 'chart.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
+
+// Register the necessary components
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+
+interface DashboardProps {
+    peopleData: any[];
+    attendanceData: any[];
+    genderData: any[];
+    unitSales: number;
+    revenue: number | null | undefined; // Explicitly declare revenue as number, null, or undefined
+    topProduct: string;
+    marketBasketData: any[];
+    timeDistributionData: any;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({
+    peopleData,
+    attendanceData,
+    genderData,
+    unitSales,
+    revenue,
+    topProduct,
+    marketBasketData,
+    timeDistributionData,
+}) => {
+    const [timeDistribution, setTimeDistribution] = useState<{ morning: number; afternoon: number; evening: number; night: number }>({ morning: 0, afternoon: 0, evening: 0, night: 0 });
+
+    useEffect(() => {
+        if (peopleData) {
+            aggregatePeopleCountByDate(peopleData);
+        }
+    }, [peopleData]);
+
+    const aggregatePeopleCountByDate = (data: any[]) => {
+        if (!data || data.length === 0) return { labels: [], data: [] }; // Return empty arrays if data is undefined or empty
+        const aggregatedData: Record<string, number> = {};
+
+        data.forEach(entry => {
+            const date = new Date(entry.timestamp).toLocaleDateString(); // Format the date
+            if (aggregatedData[date]) {
+                aggregatedData[date] += entry.lastCount; // Sum the counts for the same date
+            } else {
+                aggregatedData[date] = entry.lastCount; // Initialize count for the date
+            }
+        });
+
+        // Convert the aggregated object into arrays for labels and data
+        return {
+            labels: Object.keys(aggregatedData),
+            data: Object.values(aggregatedData),
+        };
+    };
+
+    const { labels, data } = aggregatePeopleCountByDate(peopleData);
+
+    const peopleCountChartData = {
+        labels: labels.length > 0 ? labels : [], // Ensure labels are defined
+        datasets: [
+            {
+                label: 'People Count',
+                data: data.length > 0 ? data : [], // Ensure data is defined
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const attendanceChartData = {
+        labels: attendanceData ? Object.keys(attendanceData) : [],
+        datasets: [
+            {
+                label: 'Product Count',
+                data: attendanceData ? Object.values(attendanceData) : [],
+                backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const genderChartData = {
+        labels: genderData ? genderData.map(data => data.date) : [],
+        datasets: [
+            {
+                label: 'Total Male',
+                data: genderData ? genderData.map(data => data.totalMale) : [],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Total Female',
+                data: genderData ? genderData.map(data => data.totalFemale) : [],
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const timeChartData = {
+        labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
+        datasets: [
+            {
+                label: 'Population Distribution by Time of Day',
+                data: [
+                    timeDistribution.morning,
+                    timeDistribution.afternoon,
+                    timeDistribution.evening,
+                    timeDistribution.night,
+                ],
+                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+            },
+        ],
+    };
+
+    return (
+        <Container fluid className="dashboard-container d-flex flex-column" style={{ minHeight: '100vh', padding: '20px' }}>
+            <h2 className="text-center my-4">Admin Dashboard</h2>
+            <Row className="mb-4">
+                <Col md={4}>
+                    <Card className="text-center shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Unit Sales This Month</Card.Title>
+                            <Card.Text style={{ fontSize: '2rem', fontWeight: 'bold' }}>{unitSales}</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="text-center shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Revenue This Month</Card.Title>
+                            <Card.Text style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                                {revenue !== null && revenue !== undefined ? `₹${revenue.toFixed(2)}` : 'N/A'}
+                            </Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={4}>
+                    <Card className="text-center shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Top Product</Card.Title>
+                            <Card.Text style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{topProduct}</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={6}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>People Count Over Time</Card.Title>
+                            <Bar data={peopleCountChartData} options={{ maintainAspectRatio: false }} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Attendance Data</Card.Title>
+                            <Bar data={attendanceChartData} options={{ maintainAspectRatio: false }} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={6}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Gender Distribution</Card.Title>
+                            <Bar data={genderChartData} options={{ maintainAspectRatio: false }} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Population Distribution by Time of Day</Card.Title>
+                            <Pie data={timeChartData} options={{ maintainAspectRatio: false }} />
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col>
+                    <Card className="shadow-sm" style={{ borderRadius: '10px', margin: '10px' }}>
+                        <Card.Body>
+                            <Card.Title>Market Basket Analysis</Card.Title>
+                            <ul>
+                                {marketBasketData && marketBasketData.map((item, index) => (
+                                    <li key={index}>{item}</li>
+                                ))}
+                            </ul>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+};
+
+export default Dashboard;
