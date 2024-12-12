@@ -23,10 +23,7 @@ export default function Home() {
         navItems={navItems} />
         <Hero />
         <Skills />
-           <Peoplecount />
-           <Feedback />
-           <StoreHeatmap />
-          <Dashboard />
+          
          <RecentProjects /> 
          <Chatbot />
         <Footer />
