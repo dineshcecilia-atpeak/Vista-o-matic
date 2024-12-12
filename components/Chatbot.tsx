@@ -1,10 +1,10 @@
 "use client";
 
-import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
+import { supabase } from "../lib/supabaseClient"; // Correct path to your Supabase client
 import React, { useState, FormEvent } from "react";
 import "./Chatbot.css"; // Import the CSS file
 
-// Define types for messages and options
+// Define types for messages
 interface Message {
   text: string;
   sender: "user" | "bot";
@@ -15,7 +15,7 @@ const Chatbox: React.FC = () => {
   const [input, setInput] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showOptions, setShowOptions] = useState<boolean>(false);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null); // Keep track of the selected option
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
 
   const initialGreeting = "How can I assist you today?";
   const options = [
@@ -25,20 +25,18 @@ const Chatbox: React.FC = () => {
 
   const handleGreetingClick = () => {
     if (isOpen) {
-      // Close the chatbot if it's open and clear the chat
-      setIsOpen(false);
-      setMessages([]); // Clear the chat when closing
+      setIsOpen(false); // Close chatbot
     } else {
-      // Open the chatbot and show options
       setShowOptions(true);
-      const greetingMessage: Message = { text: initialGreeting, sender: "bot" };
-      setMessages((prev) => [...prev, greetingMessage]);
-      setIsOpen(true); // Open chatbot on greeting click
+      setMessages((prev) => [
+        ...prev,
+        { text: initialGreeting, sender: "bot" },
+      ]);
+      setIsOpen(true); // Open chatbot
     }
   };
 
   const fetchSalesData = async (option: number, date: string = ""): Promise<JSX.Element | string> => {
-    let responseMessage = "";
     try {
       const parsedDate = new Date(date);
       if (isNaN(parsedDate.getTime())) {
@@ -55,50 +53,51 @@ const Chatbox: React.FC = () => {
         if (error) throw error;
 
         if (data.length === 0) {
-          responseMessage = `No sales recorded on ${date}.`;
+          return `No sales recorded on ${date}.`;
         } else {
           let totalAmount = 0;
           let totalItemCount = 0;
           let itemsSold = "";
 
           data.forEach((payment) => {
-            const cartItems = typeof payment.cart === "object" ? payment.cart : JSON.parse(payment.cart);
+            const cartItems = Array.isArray(payment.cart)
+              ? payment.cart
+              : JSON.parse(payment.cart);
 
             if (cartItems.length > 0) {
-              const itemDetails = cartItems.map((cartItem) => {
+              cartItems.forEach((cartItem) => {
                 const itemTotal = cartItem.price * cartItem.quantity;
                 totalAmount += itemTotal;
                 totalItemCount += cartItem.quantity;
-                return `${cartItem.name} (Quantity: ${cartItem.quantity}): ₹${itemTotal.toFixed(2)}`;
-              }).join(", ");
-
-              itemsSold += itemDetails + ", ";
+                itemsSold += `${cartItem.name} (Quantity: ${cartItem.quantity}): ₹${itemTotal.toFixed(
+                  2
+                )}, `;
+              });
             }
           });
 
           itemsSold = itemsSold.slice(0, -2); // Remove trailing comma and space
-          const currentTime = new Date();
-          const formattedCurrentTime = currentTime.toISOString();
+          const currentTime = new Date().toISOString();
 
-          responseMessage = (
+          return (
             <>
               Sales on {date}:<br />
-              Total sales amount: <strong>₹{totalAmount.toFixed(2)}</strong><br />
-              Total items sold: <strong>{totalItemCount}</strong><br />
-              Timestamp at request: <strong>{formattedCurrentTime}</strong>
+              Total sales amount: <strong>₹{totalAmount.toFixed(2)}</strong>
+              <br />
+              Total items sold: <strong>{totalItemCount}</strong>
+              <br />
+              Timestamp at request: <strong>{currentTime}</strong>
             </>
           );
         }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      responseMessage = "Sorry, there was an error fetching the data.";
+      return "Sorry, there was an error fetching the data.";
     }
-    return responseMessage;
   };
 
   const fetchPeopleCount = async (date: string): Promise<string> => {
-    let responseMessage = "";
     try {
       const [year, month, day] = date.split("-");
       const formattedStartDate = `${year}-${month}-${day} 00:00:00`;
@@ -113,81 +112,81 @@ const Chatbox: React.FC = () => {
       if (error) throw error;
 
       if (data.length === 0) {
-        responseMessage = `No records found for ${date}.`;
+        return `No records found for ${date}.`;
       } else {
         const totalCount = data.reduce(
-          (acc, record) => acc + parseInt(record.lastCount, 10) || 0,
+          (acc, record) => acc + (parseInt(record.lastCount, 10) || 0),
           0
         );
-        responseMessage = `Total people counted on ${date}: ${totalCount}`;
+        return `Total people counted on ${date}: ${totalCount}`;
       }
     } catch (error) {
       console.error("Error fetching people count:", error);
-      responseMessage = "Sorry, there was an error fetching the people count.";
+      return "Sorry, there was an error fetching the people count.";
     }
-    return responseMessage;
   };
 
   const handleOptionSelect = (option: number) => {
-    const newMessage: Message = { text: `You selected: ${options[option - 1]}`, sender: "user" };
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [
+      ...prev,
+      { text: `You selected: ${options[option - 1]}`, sender: "user" },
+    ]);
     setSelectedOption(option);
     setShowOptions(false);
-
-    const responseMessage: Message = {
-      text: "Please provide a date (YYYY-MM-DD):",
-      sender: "bot",
-    };
-    setMessages((prev) => [...prev, responseMessage]);
+    setMessages((prev) => [
+      ...prev,
+      { text: "Please provide a date (YYYY-MM-DD):", sender: "bot" },
+    ]);
   };
 
   const handleSend = async (e: FormEvent) => {
     e.preventDefault();
-    const newMessage: Message = { text: input, sender: "user" };
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, { text: input, sender: "user" }]);
 
     if (selectedOption) {
       if (input.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        let responseMessage = "";
+        let responseMessage: JSX.Element | string = "";
         if (selectedOption === 1) {
           responseMessage = await fetchSalesData(selectedOption, input);
         } else if (selectedOption === 2) {
           responseMessage = await fetchPeopleCount(input);
         }
 
-        const botResponse: Message = { text: responseMessage || "I'm not sure how to answer that.", sender: "bot" };
-        setMessages((prev) => [...prev, botResponse]);
+        setMessages((prev) => [
+          ...prev,
+          { text: responseMessage, sender: "bot" },
+          { text: "Do you want more help? (Yes/No)", sender: "bot" },
+        ]);
         setInput("");
         setSelectedOption(null);
-
-        const moreHelpMessage: Message = { text: "Do you want more help? (Yes/No)", sender: "bot" };
-        setMessages((prev) => [...prev, moreHelpMessage]);
         return;
       } else {
-        const botResponse: Message = {
-          text: 'Sorry, I can’t understand. Please provide a valid date in YYYY-MM-DD format.',
-          sender: "bot",
-        };
-        setMessages((prev) => [...prev, botResponse]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Sorry, I can’t understand. Please provide a valid date in YYYY-MM-DD format.",
+            sender: "bot",
+          },
+        ]);
         setInput("");
         return;
       }
     }
 
-    // Handling "Yes" or "No" for more help
     if (input.toLowerCase() === "yes") {
       setShowOptions(true);
     } else if (input.toLowerCase() === "no") {
-      const thankYouMessage: Message = { text: "Thank you! If you want to start again, type 'analysis'.", sender: "bot" };
-      setMessages((prev) => [...prev, thankYouMessage]);
+      setMessages((prev) => [
+        ...prev,
+        { text: "Thank you! If you want to start again, type 'analysis'.", sender: "bot" },
+      ]);
     } else if (input.toLowerCase() === "analysis") {
       handleGreetingClick();
     } else {
-      const botResponse: Message = {
-        text: "Sorry, I can't understand you. Please type 'Yes' or 'No'.",
-        sender: "bot",
-      };
-      setMessages((prev) => [...prev, botResponse]);
+      setMessages((prev) => [
+        ...prev,
+        { text: "Sorry, I can't understand you. Please type 'Yes' or 'No'.", sender: "bot" },
+      ]);
     }
     setInput("");
   };
