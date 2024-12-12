@@ -282,7 +282,10 @@ const Dashboard = () => {
     };
 
     return (
+        
         <Container className="mt-5">
+             <h1 className="text-center mb-4">DASHBOARD</h1> {/* Add this line */}
+
             <Row>
                 <Col md={4}>
                     <Card className="shadow-sm" style={{ borderRadius: '10px' }}>

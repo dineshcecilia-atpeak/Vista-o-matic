@@ -76,12 +76,12 @@ export const FloatingNav = ({
                     {/* Features in a single row */}
                     <div className="flex justify-around items-center space-x-4">
 
-                      {/* Attendance */}
-                      <Link href="/attendance">
+                      {/* Sentiment */}
+                      <Link href="/Feedback">
                         <div className="flex flex-col items-center group">
                           <img
                             src="/attendance.png"
-                            alt="Attendance"
+                            alt="Feedback"
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">
@@ -91,11 +91,11 @@ export const FloatingNav = ({
                       </Link>
 
                       {/* QR Scanner */}
-                      <Link href="/qr-scanner">
+                      <Link href="/airmointor">
                         <div className="flex flex-col items-center group">
                           <img
                             src="/air.png"
-                            alt="QR Scanner"
+                            alt="Air-Mointor"
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">
@@ -105,7 +105,7 @@ export const FloatingNav = ({
                         </div>
                       </Link>
                       {/* Heatmap */}
-                      <Link href="/heatmap">
+                      <Link href="/StoreHeatmap">
                         <div className="flex flex-col items-center group">
                           <img
                             src="/heatmap.png"
@@ -118,12 +118,12 @@ export const FloatingNav = ({
                         </div>
                       </Link>
 
-                      {/* People Analysis */}
-                      <Link href="/people-analysis">
+                      {/*  */}
+                      <Link href="/Peoplecount">
                         <div className="flex flex-col items-center group">
                           <img
                             src="/people.png"
-                            alt="People Analysis"
+                            alt="Counting"
                             className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
                           />
                           <h3 className="mt-2 text-sm font-semibold text-white">

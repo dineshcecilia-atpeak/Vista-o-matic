@@ -4,9 +4,11 @@ export const navItems = [
     name: "Camera Interface",
     link: "#camera-interface",
     subItems: [
-      { name: "Attendance", link: "#attendance" },
-      { name: "People Counting", link: "#people-counting" },
-      { name: "QR Scanner", link: "#qr-scanner" },
+      { name: "Feedback", link: "/Feedback" },
+      { name: "Peoplecount", link: "/Peoplecount" },
+      { name: "Sentiment", link: "/Sentiment" },
+      { name: "Heatmap", link: "/Heatmap" },
+
     ],
   },
   { name: "Dashboard", link: "/Dashboard" },
