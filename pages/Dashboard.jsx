@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Container } from 'react-bootstrap';
 import { Bar, Pie } from 'react-chartjs-2';
+import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
+
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -12,9 +14,6 @@ import {
     Legend,
     ArcElement,
 } from 'chart.js';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Link from "next/link";
-import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
 
 // Register the necessary components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -115,7 +114,6 @@ const Dashboard = () => {
 
         fetchData();
     }, []);
-
     const aggregatePeopleCountByDate = (data) => {
         const aggregatedData = {};
     
@@ -214,22 +212,26 @@ const Dashboard = () => {
     
         setTimeDistributionData(timeDistribution);
     };
+    
+
 
     const { labels, data } = aggregatePeopleCountByDate(peopleData);
 
-    const peopleCountChartData = {
-        labels: labels, // Dates
-        datasets: [
-            {
-                label: 'People Count',
-                data: data, // Aggregated counts
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-            },
-        ],
-    };
+const peopleCountChartData = {
+    labels: labels, // Dates
+    datasets: [
+        {
+            label: 'People Count',
+            data: data, // Aggregated counts
+            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+        },
+    ],
+};
 
+    
+    
     const attendanceChartData = {
         labels: Object.keys(attendanceData),
         datasets: [
@@ -267,107 +269,95 @@ const Dashboard = () => {
         labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
         datasets: [
             {
-                label: 'People Count Distribution',
+                label: 'Population Distribution by Time of Day',
                 data: [
                     timeDistributionData.morning,
                     timeDistributionData.afternoon,
                     timeDistributionData.evening,
                     timeDistributionData.night,
                 ],
-                backgroundColor: ['rgba(255, 159, 64, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                borderColor: ['rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 99, 132, 1)'],
-                borderWidth: 1,
+                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
             },
         ],
     };
+    
 
     return (
-        
-        <Container className="mt-5">
-             <h1 className="text-center mb-4">DASHBOARD</h1> {/* Add this line */}
-
-            <Row>
-                <Col md={4}>
-                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Unit Sales</Card.Title>
-                            <Card.Text>{unitSales}</Card.Text>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={4}>
-                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Revenue</Card.Title>
-                            <Card.Text>{revenue.toFixed(2)} USD</Card.Text>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={4}>
-                    <Card className="shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Top Product</Card.Title>
-                            <Card.Text>{topProduct}</Card.Text>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-            <Row className="mb-4">
-                <Col md={6} className="mb-4">
-                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>People Count Over Time</Card.Title>
-                            <Bar data={peopleCountChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={6} className="mb-4">
-                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Product Data</Card.Title>
-                            <Bar data={attendanceChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-            <Row className="mb-4">
-                <Col md={6} className="mb-4">
-                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Gender Distribution Over Time</Card.Title>
-                            <Bar data={genderChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={6} className="mb-4">
-                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Time Distribution of People Count</Card.Title>
-                            <Pie data={timeChartData} options={{ responsive: true, maintainAspectRatio: true }} height={250} />
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-
-            <Row>
-                <Col md={12}>
-                    <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
-                        <Card.Body>
-                            <Card.Title>Market Basket Analysis</Card.Title>
-                            <ul>
-                                {marketBasketData.associationRules.length > 0 ? 
-                                    marketBasketData.associationRules.map((rule, index) => (
-                                        <li key={index}>
-                                            <strong>{rule.rule}</strong> - Support: {rule.support.toFixed(2)}, Confidence: {rule.confidence.toFixed(2)}, Lift: {rule.lift.toFixed(2)}
-                                        </li>
-                                    )) 
-                                    : <p>No rules generated</p>}
-                            </ul>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-        </Container>
+        <div id="Dashboard">
+            <Container fluid className="dashboard-container d-flex flex-column" style={{ minHeight: '100vh' }}>
+                <h1 className="text-center my-4" style={{ fontSize: '2.5rem' }}>Admin Dashboard</h1>
+                
+                {/* Metrics Row */}
+                <Row className="mb-4">
+                    <Col md={4}>
+                        <Card className="text-center shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Card.Body>
+                                <Card.Title>Unit Sales This Month</Card.Title>
+                                <Card.Text style={{ fontSize: '2rem', fontWeight: 'bold' }}>{unitSales}</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={4}>
+                        <Card className="text-center shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Card.Body>
+                                <Card.Title>Revenue This Month</Card.Title>
+                                <Card.Text style={{ fontSize: '2rem', fontWeight: 'bold' }}>${revenue}</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={4}>
+                        <Card className="text-center shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Card.Body>
+                                <Card.Title>Top Selling Product</Card.Title>
+                                <Card.Text style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{topProduct}</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+                
+                {/* Graphs Row */}
+                <Row>
+                    <Col md={6}>
+                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Bar data={peopleCountChartData} />
+                        </Card>
+                    </Col>
+                    <Col md={6}>
+                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Bar data={attendanceChartData} />
+                        </Card>
+                    </Col>
+                </Row>
+                
+                {/* Additional Graphs Row */}
+                <Row className="mt-4">
+                    <Col md={6}>
+                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Bar data={genderChartData} />
+                        </Card>
+                    </Col>
+                    <Col md={6}>
+                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                            <Pie data={timeChartData} />
+                        </Card>
+                    </Col>
+                </Row>
+                
+                {/* Market Basket Analysis Results */}
+                <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
+                    <Card.Body>
+                        <Card.Title>Market Basket Analysis</Card.Title>
+                        <ul>
+                            {marketBasketData.associationRules.map((rule, index) => (
+                                <li key={index}>
+                                    <strong>{rule.rule}</strong> - Support: {(rule.support * 100).toFixed(2)}%, Confidence: {(rule.confidence * 100).toFixed(2)}%, Lift: {rule.lift.toFixed(2)}
+                                </li>
+                            ))}
+                        </ul>
+                    </Card.Body>
+                </Card>
+            </Container>
+        </div>
     );
 };
 

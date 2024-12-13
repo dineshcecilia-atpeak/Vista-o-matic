@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { Card, Button } from 'react-bootstrap';
+import { Card, Button, Container, Navbar } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as faceapi from '@vladmandic/face-api';
 import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
-
+import { ArrowLeft } from 'react-bootstrap-icons'; // Importing Bootstrap icons
 interface CollectedData {
   gender: string;
   emotion: string;
@@ -208,12 +208,86 @@ const Feedback: React.FC = () => {
   };
   
   return (
-    <div className="camera-container d-flex flex-column align-items-center" style={{ minHeight: '100vh' }}>
-      <h2 className="mb-4">Webcam People Analysis</h2>
+    <Container fluid className="camera-container d-flex flex-column align-items-center justify-content-between" style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+    <Navbar className="w-100 py-2" style={{ backgroundColor: 'transparent' }}>
+      <Button variant="link" className="text-dark" onClick={() => window.history.back()}>
+        <ArrowLeft size={24} className="me-2" />
+      </Button>
+    </Navbar>
+    <h2 className="m-0" style={{
+  textAlign: 'center',
+  width: '100%',
+  fontSize: '64px',          /* Make it big and bold */
+  fontWeight: '700',         /* Bold for prominence */
+  color: '#2C3E50',          /* A modern dark blue-gray */
+  letterSpacing: '2px',      /* Slight spacing for elegance */
+  animation: 'fadeSlideIn 1s ease-in-out' /* Smooth, elegant animation */
+}}>
+  Feedback
+</h2>
+
+<style jsx>{`
+  @keyframes fadeSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-30px); /* Slight upward slide */
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0); /* Settle into position */
+    }
+  }
+`}</style>
+
       <Card className="shadow" style={{ width: '100%', maxWidth: '600px' }}>
         <Card.Body>
+          
           {showCamera ? (
-            <Button variant="danger" onClick={handleStopCamera}>
+            <>
+              <video
+                ref={videoRef}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  borderRadius: '16px',
+                }}
+                autoPlay
+                muted
+              />
+              <canvas
+                ref={canvasRef}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                }}
+              />
+            </>
+          ) : (
+            <div
+              style={{
+                height: '300px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: '16px',
+                background: '#f9f9f9',
+                boxShadow: 'inset 0 4px 8px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <p style={{ color: '#999', fontSize: '16px', textAlign: 'center' }}>
+                Click "Start Camera" to enable the webcam.
+              </p>
+            </div>
+          )}
+        </Card.Body>
+        <Card.Footer className="d-flex justify-content-center">
+          {showCamera ? (
+            <Button variant="secondary" onClick={handleStopCamera}>
               Stop Camera
             </Button>
           ) : (
@@ -221,37 +295,26 @@ const Feedback: React.FC = () => {
               Start Camera
             </Button>
           )}
-        </Card.Body>
+        </Card.Footer>
       </Card>
 
-      {showCamera && (
-        <div className="video-stream mt-4" style={{ position: 'relative' }}>
-          <Card className="shadow">
-            <Card.Body>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{ width: '100%', maxHeight: '400px', objectFit: 'cover' }}
-              />
-              <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
-            </Card.Body>
-          </Card>
-        </div>
-      )}
-
-      {/* Display summary if visible */}
       {summaryVisible && (
-        <Card className="mt-4">
+        <Card className="mt-4 shadow" style={{ width: '100%', maxWidth: '600px' }}>
           <Card.Body>
-            <h5>Summary</h5>
-            <p>Total Male: {finalMaleCount}</p>
-            <p>Total Female: {finalFemaleCount}</p>
+            <h5 className="card-title">Analysis Summary</h5>
+            <p>Total Males: {finalMaleCount}</p>
+            <p>Total Females: {finalFemaleCount}</p>
+            <p>Mood: {finalMood}</p>
           </Card.Body>
         </Card>
       )}
-    </div>
+
+      <footer className="bg-light w-100 text-center py-3">
+        <p className="mb-0">
+          © {new Date().getFullYear()} Vista-o-Matic: <span role="img" aria-label="heart"></span>  An advanced solution 
+        </p>
+      </footer>
+    </Container>
   );
 };
 

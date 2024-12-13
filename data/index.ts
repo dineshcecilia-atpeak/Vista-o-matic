@@ -6,12 +6,12 @@ export const navItems = [
     subItems: [
       { name: "Feedback", link: "/Feedback" },
       { name: "Peoplecount", link: "/Peoplecount" },
-      { name: "Sentiment", link: "/Sentiment" },
+      { name: "Air", link: "#Air" },
       { name: "Heatmap", link: "/Heatmap" },
 
     ],
   },
-  { name: "Dashboard", link: "/Dashboard" },
+  { name: "Dashboard", link: "#Dashboard" },
   { name: "Contact", link: "#contact" },
 ];
 

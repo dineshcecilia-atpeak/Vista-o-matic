@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
+import { Navbar } from 'react-bootstrap';
+import { ArrowLeft } from 'react-bootstrap-icons'; // Importing Bootstrap icons
+
 import { Button, Card, CardContent, Typography, Container, Box } from '@mui/material';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -32,20 +35,24 @@ const StoreHeatmap: React.FC = () => {
     }
   };
 
-  // Start camera feed
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setVideoSrc(null);  // Disable video source if camera is used
-      startProcessing();
-    } catch (err) {
-      console.error('Error accessing camera:', err);
+   // Start camera feed
+const startCamera = async () => {
+  try {
+    const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    setStream(mediaStream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
+
+      // Wait for the video to load metadata before playing
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play();
+      };
     }
-  };
+    setVideoSrc(null); // Disable video source if camera is used
+  } catch (err) {
+    console.error('Error accessing camera:', err);
+  }
+};
 
   // Start video processing
   const startProcessing = () => {
@@ -161,11 +168,38 @@ const StoreHeatmap: React.FC = () => {
 
   return (
     <Container maxWidth="md" style={{ marginTop: '50px' }}>
+       <Navbar className="w-100 py-2" style={{ backgroundColor: 'transparent' }}>
+      <Button variant="link" className="text-dark" onClick={() => window.history.back()}>
+        <ArrowLeft size={24} className="me-2" />
+      </Button>
+    </Navbar>
+    <h2 className="m-0" style={{
+  textAlign: 'center',
+  width: '100%',
+  fontSize: '64px',          /* Make it big and bold */
+  fontWeight: '700',         /* Bold for prominence */
+  color: '#2C3E50',          /* A modern dark blue-gray */
+  letterSpacing: '2px',      /* Slight spacing for elegance */
+  animation: 'fadeSlideIn 1s ease-in-out' /* Smooth, elegant animation */
+}}>
+  Store Heatmap
+</h2>
+
+<style jsx>{`
+  @keyframes fadeSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-30px); /* Slight upward slide */
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0); /* Settle into position */
+    }
+  }
+`}</style>
       <Card sx={{ boxShadow: 3 }}>
         <CardContent>
-          <Typography variant="h4" gutterBottom align="center">
-            Store Heatmap Tracker
-          </Typography>
+         
 
           <Box display="flex" justifyContent="center" marginBottom={3}>
             <Button
@@ -223,6 +257,12 @@ const StoreHeatmap: React.FC = () => {
           </Box>
         </CardContent>
       </Card>
+      <footer className="bg-white w-100 text-center py-3">
+  <p className="mb-0">
+    © {new Date().getFullYear()} Vista-o-Matic: <span role="img" aria-label="heart"></span> An advanced solution
+  </p>
+</footer>
+
     </Container>
   );
 };

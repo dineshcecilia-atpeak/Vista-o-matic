@@ -1,153 +1,240 @@
-"use client";
 
-import React, { useState, useRef } from 'react';
-import { Card, Button } from 'react-bootstrap';
+'use client';
+
+import { Container, Navbar, Button } from 'react-bootstrap';
+import React, { useState, useRef, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import '@tensorflow/tfjs';
 import { supabase } from "../lib/supabaseClient"; // Correct path to your supabaseClient
+import { ArrowLeft } from 'react-bootstrap-icons'; // Imp
 
-const Peoplecount: React.FC = () => {
+
+const PeopleCount: React.FC = () => {
   const [showCamera, setShowCamera] = useState<boolean>(false);
   const [peopleCount, setPeopleCount] = useState<number>(0);
-  const [lastCount, setLastCount] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
 
-  const handleStartCamera = async () => {
-    setShowCamera(true);
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    mediaStreamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.onloadedmetadata = () => {
-        videoRef.current?.play();
-        if (canvasRef.current) {
-          canvasRef.current.width = videoRef.current?.videoWidth ?? 0;
-          canvasRef.current.height = videoRef.current?.videoHeight ?? 0;
-
-          const modelPromise = cocoSsd.load();
-          modelPromise.then(model => {
-            detectObjects(model);
-          });
-        }
-      };
-    }
-  };
-
-  const handleStopCamera = async () => {
-    const stream = mediaStreamRef.current;
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setShowCamera(false);
-
-    // Update last count when stopping the camera
-    setLastCount(peopleCount);
-
+  // Function to send people count to Supabase
+  // Function to send people count to Supabase
+// Function to send people count to Supabase
+const sendCountToDatabase = async (PeopleCount: number) => {
+  try {
     // Set current timestamp and format date and time
     const currentTimestamp = new Date();
     const formattedDate = `${currentTimestamp.getFullYear()}-${String(currentTimestamp.getMonth() + 1).padStart(2, '0')}-${String(currentTimestamp.getDate()).padStart(2, '0')}`;
     const formattedTime = `${String(currentTimestamp.getHours()).padStart(2, '0')}:${String(currentTimestamp.getMinutes()).padStart(2, '0')}:${String(currentTimestamp.getSeconds()).padStart(2, '0')}`;
 
     const { error } = await supabase.from("peopledata").insert({
-      "lastCount": peopleCount,
+      "lastCount": PeopleCount,
       "timestamp": `${formattedDate} ${formattedTime}` // Combine date and time
     });
 
     setPeopleCount(0); // Reset current count
     console.log(error);
-  };
+  } catch (error) {
+    console.error('Error sending data:', error);
+  }
+};
 
-  const detectObjects = (model: cocoSsd.ObjectDetection) => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    const detect = async () => {
-      if (video && canvas && video.videoWidth > 0 && video.videoHeight > 0) {
-        const predictions = await model.detect(video);
-        const peoplePredictions = predictions.filter(p => p.class === 'person');
-        setPeopleCount(peoplePredictions.length);
-        drawBoxes(canvas.getContext('2d')!, video, peoplePredictions);
+  // Timer to send data every 1 minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (peopleCount > 0) {
+        sendCountToDatabase(peopleCount);
       }
-      requestAnimationFrame(() => detect());
-    };
+    }, 6000); // 1 minute
 
-    detect();
+    return () => clearInterval(interval); // Cleanup on component unmount
+  }, [peopleCount]);
+
+  const handleStartCamera = async () => {
+    setShowCamera(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+    }
+
+    const model = await cocoSsd.load();
+    detectPeople(model);
   };
 
-  const drawBoxes = (context: CanvasRenderingContext2D, video: HTMLVideoElement, predictions: cocoSsd.DetectedObject[]) => {
-    if (!context || !canvasRef.current) return;
-    context.clearRect(0, 0, video.videoWidth, video.videoHeight);
-    context.strokeStyle = 'green';
-    context.lineWidth = 2;
+  const handleStopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    setShowCamera(false);
+    setPeopleCount(0);
+  };
 
-    const scaleX = canvasRef.current.width / video.videoWidth;
-    const scaleY = canvasRef.current.height / video.videoHeight;
+  const detectPeople = async (model: cocoSsd.ObjectDetection) => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
 
-    predictions.forEach(prediction => {
-      const [x, y, width, height] = prediction.bbox;
-      context.strokeRect(x * scaleX, y * scaleY, width * scaleX, height * scaleY);
-    });
+      // Set canvas size to match video size
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const detect = async () => {
+        if (video.readyState === 4 && context) {
+          const predictions = await model.detect(video);
+          const people = predictions.filter((p) => p.class === 'person');
+          setPeopleCount(people.length);
+
+          // Draw bounding boxes
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          people.forEach((person) => {
+            const [x, y, width, height] = person.bbox;
+
+            // Ensure bounding boxes stay within canvas dimensions
+            const boundedX = Math.max(0, x);
+            const boundedY = Math.max(0, y);
+            const boundedWidth = Math.min(canvas.width - boundedX, width);
+            const boundedHeight = Math.min(canvas.height - boundedY, height);
+
+            context.strokeStyle = '#00FF00';
+            context.lineWidth = 2;
+            context.strokeRect(boundedX, boundedY, boundedWidth, boundedHeight);
+          });
+        }
+        requestAnimationFrame(detect);
+      };
+      detect();
+    }
   };
 
   return (
-    <div className="camera-container d-flex flex-column align-items-center" style={{ minHeight: '100vh' }}>
-      <h2 className="mb-4">Webcam People Counting</h2>
-      <Card className="shadow" style={{ width: '100%', maxWidth: '600px' }}>
-        <Card.Body>
-          {showCamera ? (
-            <Button variant="danger" onClick={handleStopCamera}>
-              Stop Camera
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={handleStartCamera}>
-              Start Camera
-            </Button>
-          )}
-        </Card.Body>
-      </Card>
-
-      {showCamera && (
-        <div className="video-stream mt-4" style={{ position: 'relative' }}>
-          <Card className="shadow">
-            <Card.Body>
-              <video
-                ref={videoRef}
-                id="videoElement"
-                autoPlay
-                playsInline
-                muted
-                style={{ width: '100%', maxHeight: '400px', objectFit: 'cover' }}
-              />
-              <canvas
-                ref={canvasRef}
+    <>
+      <Navbar className="w-100 py-2" style={{ backgroundColor: 'transparent' }}>
+        <Button variant="link" className="text-dark" onClick={() => window.history.back()}>
+          <ArrowLeft size={24} className="me-2" />
+        </Button>
+      </Navbar>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'white',
+          padding: '20px',
+        }}
+      >
+        <h1
+          style={{
+            textAlign: 'center',
+            width: '100%',
+            fontSize: '64px', // Big and bold for prominence
+            fontWeight: '700',
+            color: '#2C3E50',
+            letterSpacing: '2px',
+            animation: 'fadeSlideIn 1s ease-in-out',
+          }}
+        >
+          People Counting
+        </h1>
+        <style jsx>{`
+          @keyframes fadeSlideIn {
+            0% {
+              opacity: 0;
+              transform: translateY(-30px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
+        <br />
+  
+        <div
+          style={{
+            background: '#fff',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            width: '90%',
+            maxWidth: '600px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            height: 'auto',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              overflow: 'hidden',
+              borderRadius: '16px',
+            }}
+          >
+            {showCamera ? (
+              <>
+                <video
+                  ref={videoRef}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: '16px',
+                  }}
+                  autoPlay
+                  muted
+                />
+                <canvas
+                  ref={canvasRef}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </>
+            ) : (
+              <div
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  zIndex: 1,
-                  width: '100%',
-                  height: '100%'
+                  height: '300px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: '16px',
+                  background: '#f9f9f9',
+                  boxShadow: 'inset 0 4px 8px rgba(0, 0, 0, 0.1)',
                 }}
-              />
-            </Card.Body>
-          </Card>
+              >
+                <p style={{ color: '#999' }}>Camera is off</p>
+              </div>
+            )}
+          </div>
+          <h2 style={{ fontWeight: 'bold', fontSize: '1.5rem', color: '#444' }}>
+            Current Count: <span style={{ color: '#007bff' }}>{peopleCount}</span>
+          </h2>
+          <div style={{ marginTop: '20px' }}>
+            {showCamera ? (
+              <Button variant="danger" onClick={handleStopCamera} style={{ padding: '10px 20px', fontSize: '1rem' }}>
+                Stop Camera
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={handleStartCamera} style={{ padding: '10px 20px', fontSize: '1rem' }}>
+                Start Camera
+              </Button>
+            )}
+          </div>
         </div>
-      )}
-
-      <h4>Current People Count: {peopleCount}</h4>
-      {!showCamera && lastCount !== null && (
-        <h4>
-          Last Count: {lastCount}
-        </h4>
-      )}
-    </div>
+        
+      </div>
+    </>
   );
 };
-
-export default Peoplecount;
+export default PeopleCount;  

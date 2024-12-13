@@ -1,201 +1,260 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useState, useEffect } from 'react';
+import { Navbar } from 'react-bootstrap';
+import { ArrowLeft } from 'react-bootstrap-icons'; // Importing Bootstrap icons
 
-const Count: React.FC = () => {
-  const [selectedFeed, setSelectedFeed] = useState("Main Entrance");
-  const [isHeatmapEnabled, setHeatmapEnabled] = useState(false);
-  const [isWebcamActive, setWebcamActive] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+import { Button, Card, CardContent, Typography, Container, Box } from '@mui/material';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-  // Function to start the webcam feed
-  const startWebcam = async () => {
-    if (navigator.mediaDevices && videoRef.current) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
+const StoreHeatmap: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const heatmapRef = useRef<HTMLCanvasElement>(null);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
-        // Set the video source to the stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
+  const HEATMAP_WIDTH = 500;
+  const HEATMAP_HEIGHT = 400;
+  const FRAME_INTERVAL = 10;
+  const HEATMAP_SCALE = 10;
+
+  // Heatmap data storage
+  const heatmapData: number[][] = Array(HEATMAP_WIDTH / HEATMAP_SCALE)
+    .fill(0)
+    .map(() => Array(HEATMAP_HEIGHT / HEATMAP_SCALE).fill(0));
+
+  useEffect(() => {
+    if (isProcessing) {
+      startProcessing();
+    } else {
+      stopProcessing();
+    }
+  }, [isProcessing]);
+
+  // Handle video file upload
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const videoUrl = URL.createObjectURL(file);
+      setVideoSrc(videoUrl);
+      stopProcessing(); // Stop any ongoing camera feed if a video is uploaded
+    }
+  };
+
+  // Start camera feed
+const startCamera = async () => {
+  try {
+    const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    setStream(mediaStream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
+
+      // Wait for the video to load metadata before playing
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play();
+      };
+    }
+    setVideoSrc(null); // Disable video source if camera is used
+  } catch (err) {
+    console.error('Error accessing camera:', err);
+  }
+};
+
+// Start video processing
+const startProcessing = () => {
+  setIsProcessing(true);
+
+  // Ensure the camera feed is ready before starting processing
+  if (videoRef.current && videoRef.current.srcObject) {
+    processVideo();
+  } else {
+    console.error('Camera feed is not ready. Please start the camera first.');
+  }
+};
+
+
+  // Stop video processing and reset heatmap
+  const stopProcessing = () => {
+    setIsProcessing(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    resetHeatmap(); // Reset heatmap when processing stops
+  };
+
+  // Reset heatmap data and rendering
+  const resetHeatmap = () => {
+    // Reset heatmap data
+    for (let x = 0; x < heatmapData.length; x++) {
+      for (let y = 0; y < heatmapData[x].length; y++) {
+        heatmapData[x][y] = 0;
+      }
+    }
+
+    // Clear heatmap canvas
+    const heatmapCanvas = heatmapRef.current;
+    const heatmapCtx = heatmapCanvas?.getContext('2d');
+    if (heatmapCtx) {
+      heatmapCtx.clearRect(0, 0, HEATMAP_WIDTH, HEATMAP_HEIGHT);
+    }
+  };
+
+  // Process video frame-by-frame
+  const processVideo = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const heatmapCanvas = heatmapRef.current;
+
+    if (!canvas || !heatmapCanvas || !video) {
+      console.error('Canvas or video element not found');
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const heatmapCtx = heatmapCanvas.getContext('2d');
+    let frameCount = 0;
+
+    const processFrame = () => {
+      if (!isProcessing || video.paused || video.ended) return;
+
+      ctx?.drawImage(video, 0, 0, HEATMAP_WIDTH, HEATMAP_HEIGHT);
+      const frameData = ctx?.getImageData(0, 0, HEATMAP_WIDTH, HEATMAP_HEIGHT);
+
+      if (frameData && frameCount % FRAME_INTERVAL === 0) {
+        detectMovement(frameData);
+        renderHeatmap(heatmapCtx);
+      }
+
+      frameCount++;
+      requestAnimationFrame(processFrame);
+    };
+
+    video.play();
+    requestAnimationFrame(processFrame);
+  };
+
+  // Detect movement based on brightness
+  const detectMovement = (frameData: ImageData) => {
+    const pixels = frameData.data;
+    for (let y = 0; y < HEATMAP_HEIGHT; y += HEATMAP_SCALE) {
+      for (let x = 0; x < HEATMAP_WIDTH; x += HEATMAP_SCALE) {
+        const pixelIndex = (y * HEATMAP_WIDTH + x) * 4;
+        const red = pixels[pixelIndex];
+        const green = pixels[pixelIndex + 1];
+        const blue = pixels[pixelIndex + 2];
+
+        const brightness = (red + green + blue) / 3;
+
+        // Increase heatmap intensity for lower brightness (i.e., more movement)
+        if (brightness < 100) {
+          const heatX = Math.floor(x / HEATMAP_SCALE);
+          const heatY = Math.floor(y / HEATMAP_SCALE);
+          heatmapData[heatX][heatY]++;
         }
-
-        setWebcamActive(true); // Indicate the webcam is active
-      } catch (error) {
-        console.error("Error accessing webcam:", error);
       }
     }
   };
 
-  // Cleanup the webcam stream when the component unmounts
-  useEffect(() => {
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
+  // Render heatmap with color based on intensity
+  const renderHeatmap = (ctx: CanvasRenderingContext2D) => {
+    ctx.clearRect(0, 0, HEATMAP_WIDTH, HEATMAP_HEIGHT);
+    for (let x = 0; x < heatmapData.length; x++) {
+      for (let y = 0; y < heatmapData[x].length; y++) {
+        const intensity = heatmapData[x][y];
+        let color = 'green'; // Default: no population
+
+        if (intensity > 30) {
+          color = 'red'; // High population
+        } else if (intensity > 10) {
+          color = 'yellow'; // Medium population
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x * HEATMAP_SCALE, y * HEATMAP_SCALE, HEATMAP_SCALE, HEATMAP_SCALE);
       }
-    };
-  }, []);
+    }
+  };
+
+  // Navigate back to the previous page or component
+  const handleBack = () => {
+    // Implement back navigation logic
+    window.history.back();
+  };
 
   return (
-    <section id="smart_space_analytics" className="p-6 lg:p-8 bg-[#00142a] min-h-screen">
-      {/* Title Section */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Smart Space Analytics</h2>
-        <p className="text-[#da7c29]">Comprehensive retail analytics and monitoring system</p>
-      </div>
+    <Container maxWidth="md" style={{ marginTop: '50px' }}>
+       <Navbar className="w-100 py-2" style={{ backgroundColor: 'transparent' }}>
+      <Button variant="link" className="text-dark" onClick={() => window.history.back()}>
+        <ArrowLeft size={24} className="me-2" />
+      </Button>
+    </Navbar>
+    <h2 className="m-0" style={{
+  textAlign: 'center',
+  width: '100%',
+  fontSize: '64px',          /* Make it big and bold */
+  fontWeight: '700',         /* Bold for prominence */
+  color: '#2C3E50',          /* A modern dark blue-gray */
+  letterSpacing: '2px',      /* Slight spacing for elegance */
+  animation: 'fadeSlideIn 1s ease-in-out' /* Smooth, elegant animation */
+}}>
+  Store Heatmap
+</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Feed & Analytics Column */}
-        <div className="lg:col-span-2">
-          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Live Analytics</h3>
-              <div className="flex items-center space-x-2">
-                <span className="flex items-center text-[#da7c29]">
-                  <span className="w-2 h-2 bg-[#da7c29] rounded-full animate-pulse mr-2"></span>
-                  Live
-                </span>
-                <select
-                  className="bg-[#404040] text-white border-0 rounded-lg text-sm px-3 py-2"
-                  value={selectedFeed}
-                  onChange={(e) => setSelectedFeed(e.target.value)}
-                >
-                  <option>Main Entrance</option>
-                  <option>Shopping Area</option>
-                  <option>Checkout Zone</option>
-                </select>
-              </div>
-            </div>
+<style jsx>{`
+  @keyframes fadeSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-30px); /* Slight upward slide */
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0); /* Settle into position */
+    }
+  }
+`}</style>
+      <Card sx={{ boxShadow: 3 }}>
+        <CardContent>
+       
 
-            {/* Video Feed Placeholder */}
-            <div className="relative aspect-video bg-[#00142a] rounded-lg overflow-hidden">
-              {/* Heat Map Toggle */}
-              <div className="absolute top-4 right-4 z-10">
-                <button
-                  className="bg-[#404040] text-white rounded-lg px-3 py-2 text-sm flex items-center"
-                  onClick={() => setHeatmapEnabled(!isHeatmapEnabled)}
-                >
-                  <i className="fas fa-fire text-[#da7c29] mr-2"></i>
-                  {isHeatmapEnabled ? "Disable Heatmap" : "Enable Heatmap"}
-                </button>
-              </div>
+          <Box display="flex" justifyContent="center" marginBottom={3}>
+            
+            <Button variant="contained" component="label" color="primary" style={{ marginRight: '10px' }}>
+              Upload Video
+              <input type="file" accept="video/*" hidden onChange={handleVideoUpload} />
+            </Button>
+            <Button variant="contained" color="secondary" onClick={startProcessing} disabled={!videoSrc && !stream} style={{ marginRight: '10px' }}>
+              Start Video
+            </Button>
+            <Button variant="contained" color="error" onClick={stopProcessing} disabled={!isProcessing} style={{ marginRight: '10px' }}>
+              Stop
+            </Button>
+            <Button variant="contained" color="success" onClick={startCamera} disabled={isProcessing}>
+              Start Camera
+            </Button>
+          </Box>
 
-              {/* Start Webcam Button */}
-              {!isWebcamActive && (
-                <div className="absolute top-4 left-4 z-10">
-                  <button
-                    className="bg-[#da7c29] text-white rounded-lg px-4 py-2"
-                    onClick={startWebcam}
-                  >
-                    Start Webcam
-                  </button>
-                </div>
-              )}
+          <Box display="flex" justifyContent="center">
+            {videoSrc && <video ref={videoRef} src={videoSrc} width={HEATMAP_WIDTH} height={HEATMAP_HEIGHT} controls muted />}
+            {stream && <video ref={videoRef} width={HEATMAP_WIDTH} height={HEATMAP_HEIGHT} autoPlay muted />}
+          </Box>
 
-              {/* Video Feed */}
-              {isWebcamActive && (
-                <video
-                  ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  playsInline
-                  muted
-                />
-              )}
-
-              {/* Stats */}
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between space-x-4">
-                {[
-                  { icon: "fas fa-users", label: "Count", value: "24" },
-                  { icon: "fas fa-venus-mars", label: "Gender", value: "M: 55% | F: 45%" },
-                  { icon: "fas fa-smile", label: "Mood", value: "Positive" },
-                ].map((stat, index) => (
-                  <div key={index} className="bg-[#1e2633] rounded-lg p-2 text-sm flex items-center flex-1">
-                    <i className={`${stat.icon} text-[#da7c29] mr-2`}></i>
-                    <span className="text-white">
-                      {stat.label}: <span className="font-bold">{stat.value}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            {[
-              { title: "Today's Sales", value: "$4,285", change: "↑ 12.5%", color: "text-green-500" },
-              { title: "Transactions", value: "186", change: "↑ 8.3%", color: "text-green-500" },
-              { title: "Avg. Time Spent", value: "24m", change: "↓ 3.1%", color: "text-red-500" },
-            ].map((stat, index) => (
-              <div key={index} className="bg-[#1e2633] rounded-lg border border-[#404040] p-4">
-                <h4 className="text-[#da7c29] text-sm mb-2">{stat.title}</h4>
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className={stat.color + " text-sm"}>{stat.change}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Side Panel */}
-        <div className="space-y-6">
-          {/* Real-time Metrics */}
-          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Real-time Metrics</h3>
-            {[
-              { label: "Store Capacity", value: "24/50", percent: 48 },
-              { label: "Employee Attendance", value: "12/15", percent: 80 },
-              { label: "QR Transactions", value: "45 today", percent: 65 },
-            ].map((metric, index) => (
-              <div key={index} className="mb-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-[#da7c29]">{metric.label}</span>
-                  <span className="text-white">{metric.value}</span>
-                </div>
-                <div className="w-full bg-[#404040] rounded-full h-2">
-                  <div
-                    className="bg-[#da7c29] rounded-full h-2"
-                    style={{ width: `${metric.percent}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Analytics Assistant */}
-          <div className="bg-[#1e2633] rounded-lg border border-[#404040] p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Analytics Assistant</h3>
-            <div className="bg-[#00142a] rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <div className="w-8 h-8 rounded-full bg-[#da7c29] flex items-center justify-center">
-                  <i className="fas fa-robot text-white"></i>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-[#da7c29]">
-                    How can I help you analyze your store data today?
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-2 mt-4">
-              <input
-                type="text"
-                placeholder="Ask about sales, attendance, or trends..."
-                className="flex-1 bg-[#404040] border border-[#404040] rounded-lg px-4 py-2 text-sm text-white"
-              />
-              <button className="bg-[#da7c29] text-white rounded-lg px-4 py-2">
-                <i className="fas fa-paper-plane"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+          <Box marginTop={3}>
+            <Typography variant="h5" align="center">Heatmap</Typography>
+            <Box display="flex" justifyContent="center">
+              <canvas ref={canvasRef} width={HEATMAP_WIDTH} height={HEATMAP_HEIGHT} />
+              <canvas ref={heatmapRef} width={HEATMAP_WIDTH} height={HEATMAP_HEIGHT} style={{ position: 'absolute' }} />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 
-export default Count;
+export default StoreHeatmap;
