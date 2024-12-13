@@ -206,7 +206,7 @@ const startCamera = async () => {
               variant="contained"
               component="label"
               color="primary"
-              style={{ marginRight: '10px' }}
+              style={{ marginRight: '10px', backgroundColor:'#da7c29' , borderBlockColor:'#da7c29'}}
             >
               Upload Video
               <input type="file" accept="video/*" hidden onChange={handleVideoUpload} />
@@ -234,6 +234,7 @@ const startCamera = async () => {
               color="success"
               onClick={startCamera}
               disabled={isProcessing}
+              style={{ marginRight: '10px' , backgroundColor:'#246b4c' , borderBlockColor:'#246b4c'}}
             >
               Start Camera
             </Button>

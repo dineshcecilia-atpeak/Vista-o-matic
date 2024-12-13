@@ -64,8 +64,10 @@ const Dashboard = () => {
                 setUnitSales(totalSales);
 
                 // Calculate revenue
-                const totalRevenueThisMonth = pay.data.reduce((total, x) => total + (x.price || 0), 0);
-                setRevenue(totalRevenueThisMonth);
+             // Calculate revenue
+const totalRevenueThisMonth = pay.data.reduce((total, x) => total + (x.price || 0), 0);
+setRevenue(totalRevenueThisMonth.toFixed(2)); // Format to 2 decimal places
+
 
                 // Determine the top product
                 const productCounts = {};
@@ -285,7 +287,7 @@ const peopleCountChartData = {
     return (
         <div id="Dashboard">
             <Container fluid className="dashboard-container d-flex flex-column" style={{ minHeight: '100vh' }}>
-                <h1 className="text-center my-4" style={{ fontSize: '2.5rem' }}>Admin Dashboard</h1>
+                <h1 className="text-center my-4" style={{ fontSize: '4rem',fontWeight: 'bold' }}>Admin Dashboard</h1>
                 
                 {/* Metrics Row */}
                 <Row className="mb-4">
@@ -318,35 +320,54 @@ const peopleCountChartData = {
                 {/* Graphs Row */}
                 <Row>
                     <Col md={6}>
-                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}> 
+                        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px' }}>
+    People count
+</h1>
                             <Bar data={peopleCountChartData} />
                         </Card>
+                        <br></br>
                     </Col>
                     <Col md={6}>
+        
                         <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <h1  style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px' }}>
+    Product count
+</h1>
+
                             <Bar data={attendanceChartData} />
                         </Card>
                     </Col>
-                </Row>
+                </Row> <br></br>
                 
                 {/* Additional Graphs Row */}
                 <Row className="mt-4">
                     <Col md={6}>
                         <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <h1  style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px' }}>
+    Gender Distribution
+</h1>
+
                             <Bar data={genderChartData} />
                         </Card>
-                    </Col>
+                    </Col><br></br>
                     <Col md={6}>
                         <Card className="p-3 shadow-sm" style={{ borderRadius: '10px' }}>
+                        <h1  style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px' }}>
+    People Distribution over Time
+</h1>
+
                             <Pie data={timeChartData} />
                         </Card>
                     </Col>
                 </Row>
-                
+                <br></br>
                 {/* Market Basket Analysis Results */}
                 <Card className="mt-4 shadow-sm" style={{ borderRadius: '10px' }}>
                     <Card.Body>
-                        <Card.Title>Market Basket Analysis</Card.Title>
+                    <h1  style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '20px' }}>
+Market Basket Analysis</h1>
+
                         <ul>
                             {marketBasketData.associationRules.map((rule, index) => (
                                 <li key={index}>

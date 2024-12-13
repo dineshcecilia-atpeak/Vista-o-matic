@@ -1,5 +1,4 @@
-import Approach from "@/components/Approach";
-import Client from "@/components/Client";
+
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
 import RecentProjects from "@/components/RecentProjects";
@@ -23,11 +22,11 @@ export default function Home() {
         <FloatingNav 
         navItems={navItems} />
         <Hero />
+       
       <Air />
         <Chatbot />
         <Dashboard/>
-        <RecentProjects />
-
+<br></br><br></br>
         <Footer />
       </div>
       

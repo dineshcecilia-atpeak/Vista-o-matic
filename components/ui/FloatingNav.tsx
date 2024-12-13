@@ -130,6 +130,8 @@ export const FloatingNav = ({
                           </h3>
                         </div>
                       </Link>
+
+                      
                     </div>
                   </motion.div>
                 )}

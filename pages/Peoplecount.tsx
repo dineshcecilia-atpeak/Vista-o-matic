@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Container, Navbar, Button } from 'react-bootstrap';
@@ -17,26 +16,24 @@ const PeopleCount: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Function to send people count to Supabase
-  // Function to send people count to Supabase
-// Function to send people count to Supabase
-const sendCountToDatabase = async (PeopleCount: number) => {
-  try {
-    // Set current timestamp and format date and time
-    const currentTimestamp = new Date();
-    const formattedDate = `${currentTimestamp.getFullYear()}-${String(currentTimestamp.getMonth() + 1).padStart(2, '0')}-${String(currentTimestamp.getDate()).padStart(2, '0')}`;
-    const formattedTime = `${String(currentTimestamp.getHours()).padStart(2, '0')}:${String(currentTimestamp.getMinutes()).padStart(2, '0')}:${String(currentTimestamp.getSeconds()).padStart(2, '0')}`;
+  const sendCountToDatabase = async (PeopleCount: number) => {
+    try {
+      // Set current timestamp and format date and time
+      const currentTimestamp = new Date();
+      const formattedDate = `${currentTimestamp.getFullYear()}-${String(currentTimestamp.getMonth() + 1).padStart(2, '0')}-${String(currentTimestamp.getDate()).padStart(2, '0')}`;
+      const formattedTime = `${String(currentTimestamp.getHours()).padStart(2, '0')}:${String(currentTimestamp.getMinutes()).padStart(2, '0')}:${String(currentTimestamp.getSeconds()).padStart(2, '0')}`;
 
-    const { error } = await supabase.from("peopledata").insert({
-      "lastCount": PeopleCount,
-      "timestamp": `${formattedDate} ${formattedTime}` // Combine date and time
-    });
+      const { error } = await supabase.from("peopledata").insert({
+        "lastCount": PeopleCount,
+        "timestamp": `${formattedDate} ${formattedTime}` // Combine date and time
+      });
 
-    setPeopleCount(0); // Reset current count
-    console.log(error);
-  } catch (error) {
-    console.error('Error sending data:', error);
-  }
-};
+      setPeopleCount(0); // Reset current count
+      console.log(error);
+    } catch (error) {
+      console.error('Error sending data:', error);
+    }
+  };
 
   // Timer to send data every 1 minute
   useEffect(() => {
@@ -97,7 +94,7 @@ const sendCountToDatabase = async (PeopleCount: number) => {
             const boundedWidth = Math.min(canvas.width - boundedX, width);
             const boundedHeight = Math.min(canvas.height - boundedY, height);
 
-            context.strokeStyle = '#00FF00';
+            context.strokeStyle = '#da7c29'; // Changed to new color
             context.lineWidth = 2;
             context.strokeRect(boundedX, boundedY, boundedWidth, boundedHeight);
           });
@@ -218,7 +215,7 @@ const sendCountToDatabase = async (PeopleCount: number) => {
             )}
           </div>
           <h2 style={{ fontWeight: 'bold', fontSize: '1.5rem', color: '#444' }}>
-            Current Count: <span style={{ color: '#007bff' }}>{peopleCount}</span>
+            Current Count: <span style={{ color: '#da7c29' }}>{peopleCount}</span>
           </h2>
           <div style={{ marginTop: '20px' }}>
             {showCamera ? (
@@ -226,7 +223,7 @@ const sendCountToDatabase = async (PeopleCount: number) => {
                 Stop Camera
               </Button>
             ) : (
-              <Button variant="primary" onClick={handleStartCamera} style={{ padding: '10px 20px', fontSize: '1rem' }}>
+              <Button variant="primary" onClick={handleStartCamera} style={{ padding: '10px 20px', fontSize: '1rem', backgroundColor:'#da7c29'}}>
                 Start Camera
               </Button>
             )}
@@ -237,4 +234,5 @@ const sendCountToDatabase = async (PeopleCount: number) => {
     </>
   );
 };
-export default PeopleCount;  
+
+export default PeopleCount;

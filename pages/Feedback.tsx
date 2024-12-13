@@ -287,12 +287,12 @@ const Feedback: React.FC = () => {
         </Card.Body>
         <Card.Footer className="d-flex justify-content-center">
           {showCamera ? (
-            <Button variant="secondary" onClick={handleStopCamera}>
+            <Button variant="secondary" onClick={handleStopCamera} >
               Stop Camera
             </Button>
           ) : (
-            <Button variant="primary" onClick={handleStartCamera}>
-              Start Camera
+               <Button variant="primary" onClick={handleStartCamera} style={{ backgroundColor: '#da7c29' }}>
+                Start Camera
             </Button>
           )}
         </Card.Footer>
