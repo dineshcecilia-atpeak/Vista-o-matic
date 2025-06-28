@@ -18,33 +18,37 @@ const PeopleCount: React.FC = () => {
   // Function to send people count to Supabase
   const sendCountToDatabase = async (PeopleCount: number) => {
     try {
-      // Set current timestamp and format date and time
-      const currentTimestamp = new Date();
-      const formattedDate = `${currentTimestamp.getFullYear()}-${String(currentTimestamp.getMonth() + 1).padStart(2, '0')}-${String(currentTimestamp.getDate()).padStart(2, '0')}`;
-      const formattedTime = `${String(currentTimestamp.getHours()).padStart(2, '0')}:${String(currentTimestamp.getMinutes()).padStart(2, '0')}:${String(currentTimestamp.getSeconds()).padStart(2, '0')}`;
-
-      const { error } = await supabase.from("peopledata").insert({
-        "lastCount": PeopleCount,
-        "timestamp": `${formattedDate} ${formattedTime}` // Combine date and time
-      });
-
-      setPeopleCount(0); // Reset current count
-      console.log(error);
-    } catch (error) {
-      console.error('Error sending data:', error);
+      const timestamp = new Date().toISOString(); // ISO format
+  
+      const { error } = await supabase.from("peopledata").insert([
+        {
+          lastcount: PeopleCount,
+          timestamp: timestamp,
+        },
+      ]);
+      
+      if (error) {
+        console.error("❌ Supabase insert error:", error.message);
+      } else {
+        console.log("✅ Data inserted successfully:", { PeopleCount, timestamp });
+      }
+      
+    } catch (err) {
+      console.error("❌ Unexpected error sending data:", err);
     }
   };
+  
 
   // Timer to send data every 1 minute
   useEffect(() => {
     const interval = setInterval(() => {
-      if (peopleCount > 0) {
+      if (showCamera) {
         sendCountToDatabase(peopleCount);
       }
-    }, 6000); // 1 minute
-
-    return () => clearInterval(interval); // Cleanup on component unmount
-  }, [peopleCount]);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [showCamera, peopleCount]);
+  
 
   const handleStartCamera = async () => {
     setShowCamera(true);

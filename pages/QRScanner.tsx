@@ -1,174 +1,264 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Alert, Button } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Link from 'next/link'; // Import Link from next/link
+
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Table,
+  Alert,
+  Button,
+  Form,
+  Container,
+  Navbar,
+} from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { QRCodeCanvas } from "qrcode.react";
 
 const QRScanner = () => {
-  const [scannedData, setScannedData] = useState('');
+  const [scannedData, setScannedData] = useState("");
   const [cart, setCart] = useState([]);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [isProductScanned, setIsProductScanned] = useState(false);
-  let qrScanner = null;
+  const [productName, setProductName] = useState("");
+  const [price, setPrice] = useState("");
+  const [generatedData, setGeneratedData] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
-    const loadHtml5QrCode = async () => {
-      const { Html5QrcodeScanner } = await import('html5-qrcode');
-      qrScanner = new Html5QrcodeScanner('reader', {
+    const storedCart = localStorage.getItem("cart");
+    if (storedCart) setCart(JSON.parse(storedCart));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    const loadScanner = async () => {
+      const { Html5QrcodeScanner } = await import("html5-qrcode");
+      const scanner = new Html5QrcodeScanner("reader", {
         qrbox: { width: 250, height: 250 },
         fps: 10,
       });
-
-      qrScanner.render(
+      scanner.render(
         (result) => {
-          if (!isProductScanned) {
-            handleScan(result);
-          }
+          if (!isProductScanned) handleScan(result);
         },
-        (err) => {
-          console.error('QR Scanner Error:', err);
-        }
+        (err) => console.error("QR Scan Error", err)
       );
     };
-
-    loadHtml5QrCode();
-
-    return () => {
-      if (qrScanner) {
-        qrScanner.clear();
-      }
-    };
+    loadScanner();
   }, [isProductScanned]);
 
   const handleScan = (data) => {
-    if (data) {
-      const productInfo = parseProductData(data);
-      if (productInfo) {
-        addProductToCart(productInfo);
-      } else {
-        setErrorMessage('Invalid QR data format. Please scan again.');
-      }
-    }
-  };
-
-  const addProductToCart = (productInfo) => {
-    const existingProductIndex = cart.findIndex(item => item.name === productInfo.name);
-    
-    if (existingProductIndex >= 0) {
-      setErrorMessage('This product is already in the cart. Please scan a different product.');
+    const productInfo = parseProductData(data);
+    if (productInfo) {
+      addProductToCart(productInfo);
     } else {
-      const newCart = [...cart, { name: productInfo.name, price: productInfo.price, quantity: 1 }];
-      setCart(newCart);
-      setScannedData(productInfo.name);
-      setErrorMessage('');
-      setIsProductScanned(true);
-
-      setTimeout(() => {
-        setIsProductScanned(false);
-      }, 1000);
+      setErrorMessage("Invalid QR data format. Please scan again.");
     }
-  };
-
-  const handleCheckout = () => (
-    <Link href="/Checkout" passHref>
-      <Button variant="success" className="mt-3" disabled={cart.length === 0}>Checkout</Button>
-    </Link>
-  );
-
-  const handleRemoveFromCart = (productName) => {
-    setCart((prevCart) => prevCart.filter(item => item.name !== productName));
-  };
-
-  const increaseQuantity = (productName) => {
-    setCart((prevCart) => {
-      return prevCart.map((item) => {
-        if (item.name === productName) {
-          return { ...item, quantity: item.quantity + 1 };
-        }
-        return item;
-      });
-    });
-  };
-
-  const decreaseQuantity = (productName) => {
-    setCart((prevCart) => {
-      return prevCart.map((item) => {
-        if (item.name === productName && item.quantity > 1) {
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      });
-    });
   };
 
   const parseProductData = (data) => {
     try {
-      const productData = data.split(';');
-      if (productData.length === 2) {
-        const name = productData[0].split(':')[1].trim();
-        const price = parseFloat(productData[1].split(':')[1].trim());
+      const parts = data.split(";");
+      if (parts.length === 2) {
+        const name = parts[0].split(":")[1].trim();
+        const price = parseFloat(parts[1].split(":")[1].trim());
         return { name, price };
-      } else {
-        throw new Error('Incorrect data format');
       }
     } catch (err) {
-      console.error('Error parsing data:', err);
-      return null;
+      console.error("Parsing error", err);
+    }
+    return null;
+  };
+
+  const addProductToCart = ({ name, price }) => {
+    if (cart.find((item) => item.name === name)) {
+      setErrorMessage("Product already in cart.");
+      return;
+    }
+    setCart([...cart, { name, price, quantity: 1 }]);
+    setScannedData(name);
+    setErrorMessage("");
+    setIsProductScanned(true);
+    setTimeout(() => setIsProductScanned(false), 1000);
+  };
+
+  const updateQuantity = (name, delta) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.name === name
+          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (name) => {
+    setCart((prev) => prev.filter((item) => item.name !== name));
+  };
+
+  const calculateTotalPrice = () =>
+    cart.reduce((acc, item) => acc + item.price * item.quantity, 0).toFixed(2);
+
+  const handleGenerate = () => {
+    if (productName && price) {
+      setGeneratedData(`name:${productName};price:${price}`);
     }
   };
 
-  const calculateTotalPrice = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
-  };
-
   return (
-    <div className="qr-scanner-container d-flex flex-column align-items-center" style={{ minHeight: '100vh' }}>
-      <h2 className="mb-4">QR Scanner</h2>
-      <div id="reader" style={{ width: '100%', maxWidth: '600px', marginTop: '20px' }}></div>
+    <div style={{ background: "#fff", minHeight: "100vh" }}>
+      <Container className="py-5 d-flex flex-column align-items-center">
+        <Navbar className="w-100 py-2" style={{ backgroundColor: "transparent" }}>
+          <Button variant="link" className="text-dark" onClick={() => router.back()}>
+            ← Back
+          </Button>
+        </Navbar>
 
-      {scannedData && (
-        <Alert variant="success" className="mt-3">Scanned: {scannedData}</Alert>
-      )}
+        <h1
+          className="fw-bold text-center mb-4"
+          style={{
+            fontSize: "3rem",
+            color: "#2C3E50",
+            animation: "fadeSlideIn 1s ease-in-out",
+            letterSpacing: "1px",
+          }}
+        >
+          QR Scanner
+        </h1>
 
-      {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
+        <style jsx>{`
+          @keyframes fadeSlideIn {
+            from {
+              opacity: 0;
+              transform: translateY(-20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
 
-      <Card className="shadow mb-4" style={{ width: '100%', maxWidth: '600px' }}>
-        <Card.Body>
-          <Card.Title>Cart</Card.Title>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Price (₹)</th>
-                <th>Quantity</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cart.length > 0 ? (
-                cart.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.name}</td>
-                    <td>₹{item.price.toFixed(2)}</td>
-                    <td>{item.quantity}</td>
-                    <td>
-                      <Button variant="primary" onClick={() => increaseQuantity(item.name)}>+</Button>
-                      <Button variant="secondary" onClick={() => decreaseQuantity(item.name)} className="mx-2" disabled={item.quantity <= 1}>-</Button>
-                      <Button variant="danger" onClick={() => handleRemoveFromCart(item.name)} className="ml-2">Remove</Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+        <div id="reader" style={{ width: "100%", maxWidth: "600px" }}></div>
+
+        {scannedData && <Alert variant="success" className="mt-3">Scanned: {scannedData}</Alert>}
+        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
+
+        <Card className="shadow-sm rounded-3 my-4 w-100" style={{ maxWidth: "600px" }}>
+          <Card.Body>
+            <Card.Title className="mb-3">Cart</Card.Title>
+            <Table striped bordered hover responsive>
+              <thead>
                 <tr>
-                  <td colSpan="4">No items in cart.</td>
+                  <th>Product</th>
+                  <th>Price (₹)</th>
+                  <th>Qty</th>
+                  <th>Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </Table>
-          <h5 className="mt-3">Total: ₹{calculateTotalPrice()}</h5>
-          {handleCheckout()}
-        </Card.Body>
-      </Card>
+              </thead>
+              <tbody>
+                {cart.length > 0 ? (
+                  cart.map((item, i) => (
+                    <tr key={i}>
+                      <td>{item.name}</td>
+                      <td>₹{item.price.toFixed(2)}</td>
+                      <td>{item.quantity}</td>
+                      <td>
+                        <Button
+                          size="sm"
+                          variant="outline-success"
+                          onClick={() => updateQuantity(item.name, 1)}
+                        >
+                          +
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline-secondary"
+                          className="mx-2"
+                          onClick={() => updateQuantity(item.name, -1)}
+                          disabled={item.quantity <= 1}
+                        >
+                          -
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          onClick={() => removeItem(item.name)}
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="4" className="text-center">No items in cart.</td></tr>
+                )}
+              </tbody>
+            </Table>
+            <h5>Total: ₹{calculateTotalPrice()}</h5>
+
+            <Link href="/Checkout" passHref legacyBehavior>
+              <Button variant="success" className="mt-3" disabled={cart.length === 0}>
+                Checkout
+              </Button>
+            </Link>
+          </Card.Body>
+        </Card>
+
+        {/* QR Generator Section */}
+        <Card className="shadow-sm rounded-3 p-4 mb-5 w-100" style={{ maxWidth: "600px" }}>
+          <Card.Title className="mb-3">Generate Product QR Code</Card.Title>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Product Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Price (₹)</Form.Label>
+              <Form.Control
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </Form.Group>
+            <Button variant="primary" onClick={handleGenerate}>
+              Generate QR Code
+            </Button>
+          </Form>
+
+          {generatedData && (
+            <div className="text-center mt-4">
+              <QRCodeCanvas id="qr-code-canvas" value={generatedData} size={256} />
+              <p className="mt-2 text-muted">Encoded: {generatedData}</p>
+              <Button
+                variant="dark"
+                onClick={() => {
+                  const canvas = document.getElementById("qr-code-canvas") as HTMLCanvasElement;
+                  const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+                  const downloadLink = document.createElement("a");
+                  downloadLink.href = pngUrl;
+                  downloadLink.download = `${productName}_QR.png`;
+                  downloadLink.click();
+                }}
+              >
+                Download QR
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        <footer className="text-center text-muted mt-5">
+          © {new Date().getFullYear()} Vista-o-Matic: An advanced solution
+        </footer>
+      </Container>
     </div>
   );
 };

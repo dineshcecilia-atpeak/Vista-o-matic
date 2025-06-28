@@ -32,6 +32,6 @@ An interactive analytics dashboard built using **Next.js**, **React**, **Supabas
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/vista-o-matic.git
+git clone git@github.com:dineshcecilia-atpeak/Vista-o-matic.git
 npm install --force
 npm run dev

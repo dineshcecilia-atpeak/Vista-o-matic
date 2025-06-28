@@ -63,80 +63,62 @@ export const FloatingNav = ({
               <AnimatePresence>
                 {hovered && (
                   <motion.div
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[80vw] max-w-[500px] bg-[#D97C29]/50 backdrop-blur-md shadow-xl rounded-lg p-4 border border-white/[0.2] transition-all duration-300"
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[600px] bg-[#D97C29]/50 backdrop-blur-md shadow-xl rounded-lg p-4 border border-white/[0.2]"
                     initial={{ opacity: 1, y: 14, x: -200 }}
                     animate={{ opacity: 1, y: 30, x: -200 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.3 }}
                     style={{
-                      perspective: "1000px",  // Adds depth
+                      perspective: "1000px",
                       transformStyle: "preserve-3d",
                     }}
                   >
-                    {/* Features in a single row */}
-                    <div className="flex justify-around items-center space-x-4">
-                      {/* Sentiment */}
+                    <div className="flex justify-around items-center flex-wrap gap-4">
+                      {/* Feedback */}
                       <Link href="/Feedback">
                         <div className="flex flex-col items-center group">
-                          <img
-                            src="/attendance.png"
-                            alt="Feedback"
-                            className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <h3 className="mt-2 text-sm font-semibold text-white">
-                            Feedback
-                          </h3>
+                          <img src="/attendance.png" alt="Feedback" className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
+                          <h3 className="mt-2 text-sm font-semibold text-white">Feedback</h3>
                         </div>
                       </Link>
 
-                      {/* QR Scanner */}
+                      {/* Air Monitor */}
                       <Link href="#Air">
                         <div className="flex flex-col items-center group">
-                          <img
-                            src="/air.png"
-                            alt="Air"
-                            className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <h3 className="mt-2 text-sm font-semibold text-white">
-                            Air Monitor
-                          </h3>
+                          <img src="/air.png" alt="Air" className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
+                          <h3 className="mt-2 text-sm font-semibold text-white">Air Monitor</h3>
                         </div>
                       </Link>
 
                       {/* Heatmap */}
                       <Link href="/StoreHeatmap">
                         <div className="flex flex-col items-center group">
-                          <img
-                            src="/heatmap.png"
-                            alt="Heatmap"
-                            className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <h3 className="mt-2 text-sm font-semibold text-white">
-                            Heatmap
-                          </h3>
+                          <img src="/heatmap.png" alt="Heatmap" className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
+                          <h3 className="mt-2 text-sm font-semibold text-white">Heatmap</h3>
                         </div>
                       </Link>
 
                       {/* People Counting */}
                       <Link href="/Peoplecount">
                         <div className="flex flex-col items-center group">
-                          <img
-                            src="/people.png"
-                            alt="Counting"
-                            className="w-12 h-12 group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <h3 className="mt-2 text-sm font-semibold text-white">
-                            Counting
-                          </h3>
+                          <img src="/people.png" alt="Counting" className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
+                          <h3 className="mt-2 text-sm font-semibold text-white">Counting</h3>
                         </div>
                       </Link>
 
-                      
+                      {/* QR Scanner */}
+                      <Link href="/QRScanner">
+                        <div className="flex flex-col items-center group">
+                          <img src="/qr.png" alt="QR Scanner" className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
+                          <h3 className="mt-2 text-sm font-semibold text-white">QR Scanner</h3>
+                        </div>
+                      </Link>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             )}
+
           </div>
         ))}
       </motion.div>
