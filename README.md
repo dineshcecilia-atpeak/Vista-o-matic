@@ -4,7 +4,8 @@ An interactive analytics dashboard built using **Next.js**, **React**, **Supabas
 
 ---
 
-##🚀 Features
+## 🚀 Features
+
 
 - ✅ People Count by Date (Bar Chart)
 - ✅ Product Count (Bar Chart)
