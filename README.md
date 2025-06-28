@@ -14,6 +14,7 @@ An interactive analytics dashboard built using **Next.js**, **React**, **Supabas
 - ✅ Monthly Revenue & Unit Sales 
 - ✅ Top Selling Product
 - ✅ Chatbot
+- ✅ QR-Based Add-to Cart
 
 ---
 
