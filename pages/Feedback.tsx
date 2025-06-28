@@ -182,30 +182,48 @@ const Feedback: React.FC = () => {
 
   const saveDataToSupabase = async (totalMale: number, totalFemale: number): Promise<void> => {
     const currentDate = new Date();
-    
-    // Use Intl.DateTimeFormat for better control over date formatting
-    const date = currentDate.toLocaleDateString('en-CA'); // Format as YYYY-MM-DD
-    const time = currentDate.toLocaleTimeString('en-GB', { hour12: false }); // Format as HH:MM:SS
+    const formattedDate = currentDate.toISOString(); // ISO string for timestamp
+  
+    const timeOfDay = (() => {
+      const hour = currentDate.getHours();
+      if (hour < 12) return "Morning";
+      if (hour < 17) return "Afternoon";
+      return "Evening";
+    })();
+  
+    const entries = [];
+  
+    if (totalMale > 0) {
+      entries.push({
+        gender: "Male",
+        count: totalMale,
+        time_of_day: timeOfDay,
+        date: formattedDate,
+      });
+    }
+  
+    if (totalFemale > 0) {
+      entries.push({
+        gender: "Female",
+        count: totalFemale,
+        time_of_day: timeOfDay,
+        date: formattedDate,
+      });
+    }
   
     try {
-      const { data, error } = await supabase.from('analysis').insert([
-        {
-          Date: date,
-          "Total male": totalMale,
-          "Total Female": totalFemale,
-          Time: time,
-        },
-      ]);
+      const { data, error } = await supabase.from("demographics").insert(entries);
   
       if (error) {
-        console.error('Error inserting data into Supabase:', error.message);
+        console.error("❌ Error inserting data into Supabase:", error.message);
       } else {
-        console.log('Data inserted successfully:', data);
+        console.log("✅ Data inserted successfully:", data);
       }
     } catch (error) {
-      console.error('Error saving data to Supabase:', error);
+      console.error("❌ Unexpected error saving data to Supabase:", error);
     }
   };
+  
   
   return (
     <Container fluid className="camera-container d-flex flex-column align-items-center justify-content-between" style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
