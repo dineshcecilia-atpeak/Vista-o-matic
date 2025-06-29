@@ -1,6 +1,6 @@
 📊 Vista-o-matic Admin Dashboard
 
-An interactive analytics dashboard built using **Next.js**, **React**, **Supabase**, and **Chart.js**, designed for real-time insights like people count, gender distribution, time-based analysis, sales metrics, and market basket association rules.
+An interactive analytics dashboard built using **Next.js**, **React**, **Supabase**, and **Chart.js**, designed for real-time insights like people count, gender distribution, time-based analysis, sales metrics etc.
 
 ---
 
